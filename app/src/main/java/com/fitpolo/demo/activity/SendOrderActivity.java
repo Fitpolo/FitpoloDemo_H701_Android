@@ -10,7 +10,6 @@ import com.fitpolo.support.OrderEnum;
 import com.fitpolo.support.bluetooth.BluetoothModule;
 import com.fitpolo.support.callback.OrderCallback;
 import com.fitpolo.support.entity.BaseResponse;
-import com.fitpolo.support.entity.InnerVersion;
 import com.fitpolo.support.task.InnerVersionTask;
 import com.fitpolo.support.task.SystemTimeTask;
 
@@ -30,7 +29,7 @@ public class SendOrderActivity extends Activity implements OrderCallback {
     }
 
     public void getInnerVersion(View view) {
-        InnerVersionTask innerVersionTask = new InnerVersionTask(this, new InnerVersion());
+        InnerVersionTask innerVersionTask = new InnerVersionTask(this);
         SystemTimeTask systemTimeTask = new SystemTimeTask(this);
         BluetoothModule.getInstance().sendOrder(innerVersionTask, systemTimeTask);
     }
@@ -40,9 +39,6 @@ public class SendOrderActivity extends Activity implements OrderCallback {
         switch (order) {
             case getInnerVersion:
                 Log.i(TAG, "onOrderResult: getInnerVersion");
-                InnerVersion version = (InnerVersion) response;
-                boolean isSupportHeartRate = version.isSupportHeartRate;
-                boolean isOldBand = version.isOldBand;
                 break;
             case setSystemTime:
                 Log.i(TAG, "onOrderResult: setSystemTime");

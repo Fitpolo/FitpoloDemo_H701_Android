@@ -6,11 +6,11 @@ import com.fitpolo.support.bluetooth.BluetoothModule;
 import com.fitpolo.support.log.LogModule;
 
 /**
- * @Date 2017/5/9
+ * @Date 2017/5/13 0013
  * @Author wenzheng.liu
- * @Description
+ * @Description 初始化类
+ * @ClassPath com.fitpolo.support.Fitpolo
  */
-
 public class Fitpolo {
 
     public static void init(Context context) {

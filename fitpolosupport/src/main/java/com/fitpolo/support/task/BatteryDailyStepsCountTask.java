@@ -8,22 +8,22 @@ import com.fitpolo.support.entity.BaseResponse;
 /**
  * @Date 2017/5/11
  * @Author wenzheng.liu
- * @Description 获取内部版本号
- * @ClassPath com.fitpolo.support.task.InnerVersionTask
+ * @Description 获取电量和记步总数
+ * @ClassPath com.fitpolo.support.task.BatteryDailyStepsCountTask
  */
-public class InnerVersionTask extends OrderTask {
+public class BatteryDailyStepsCountTask extends OrderTask {
 
-    public InnerVersionTask(OrderCallback callback) {
-        setOrder(OrderEnum.getInnerVersion);
+    public BatteryDailyStepsCountTask(OrderCallback callback) {
+        setOrder(OrderEnum.getBatteryDailyStepCount);
         setCallback(callback);
         setResponse(new BaseResponse());
     }
 
     @Override
-    public byte[] assemble(Object ...objects) {
+    public byte[] assemble(Object... objects) {
         byte[] byteArray = new byte[2];
         byteArray[0] = (byte) FitConstant.HEADER_GETDATA;
-        byteArray[1] = (byte) FitConstant.GET_INNER_VERSION;
+        byteArray[1] = (byte) FitConstant.GET_BATTERY_DAILY_STEP_COUNT;
         return byteArray;
     }
 }

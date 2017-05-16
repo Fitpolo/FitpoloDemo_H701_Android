@@ -8,22 +8,22 @@ import com.fitpolo.support.entity.BaseResponse;
 /**
  * @Date 2017/5/11
  * @Author wenzheng.liu
- * @Description 获取内部版本号
- * @ClassPath com.fitpolo.support.task.InnerVersionTask
+ * @Description 获取心率数据
+ * @ClassPath com.fitpolo.support.task.HeartRateTask
  */
-public class InnerVersionTask extends OrderTask {
+public class HeartRateTask extends OrderTask {
 
-    public InnerVersionTask(OrderCallback callback) {
-        setOrder(OrderEnum.getInnerVersion);
+    public HeartRateTask(OrderCallback callback) {
+        setOrder(OrderEnum.getHeartRate);
         setCallback(callback);
         setResponse(new BaseResponse());
     }
 
     @Override
-    public byte[] assemble(Object ...objects) {
+    public byte[] assemble(Object... objects) {
         byte[] byteArray = new byte[2];
         byteArray[0] = (byte) FitConstant.HEADER_GETDATA;
-        byteArray[1] = (byte) FitConstant.GET_INNER_VERSION;
+        byteArray[1] = (byte) FitConstant.GET_HEART_RATE;
         return byteArray;
     }
 }

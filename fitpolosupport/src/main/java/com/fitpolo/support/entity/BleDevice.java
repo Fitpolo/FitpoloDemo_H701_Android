@@ -2,6 +2,12 @@ package com.fitpolo.support.entity;
 
 import java.io.Serializable;
 
+/**
+ * @Date 2017/5/14 0014
+ * @Author wenzheng.liu
+ * @Description 蓝牙设备
+ * @ClassPath com.fitpolo.support.entity.BleDevice
+ */
 public class BleDevice implements Serializable, Comparable<BleDevice> {
 
     private static final long serialVersionUID = 1L;

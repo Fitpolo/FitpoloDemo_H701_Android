@@ -8,22 +8,22 @@ import com.fitpolo.support.entity.BaseResponse;
 /**
  * @Date 2017/5/11
  * @Author wenzheng.liu
- * @Description 获取内部版本号
- * @ClassPath com.fitpolo.support.task.InnerVersionTask
+ * @Description 获取固件版本号
+ * @ClassPath com.fitpolo.support.task.FirmwareVersionTask
  */
-public class InnerVersionTask extends OrderTask {
+public class FirmwareVersionTask extends OrderTask {
 
-    public InnerVersionTask(OrderCallback callback) {
-        setOrder(OrderEnum.getInnerVersion);
+    public FirmwareVersionTask(OrderCallback callback) {
+        setOrder(OrderEnum.getFirmwareVersion);
         setCallback(callback);
         setResponse(new BaseResponse());
     }
 
     @Override
-    public byte[] assemble(Object ...objects) {
+    public byte[] assemble(Object... objects) {
         byte[] byteArray = new byte[2];
         byteArray[0] = (byte) FitConstant.HEADER_GETDATA;
-        byteArray[1] = (byte) FitConstant.GET_INNER_VERSION;
+        byteArray[1] = (byte) FitConstant.GET_FIRMWARE_VERSION;
         return byteArray;
     }
 }

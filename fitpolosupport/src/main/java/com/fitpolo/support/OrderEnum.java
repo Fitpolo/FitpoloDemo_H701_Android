@@ -11,12 +11,38 @@ public enum OrderEnum {
     getInnerVersion,
     // 设置系统时间
     setSystemTime,
+    // 设置个人数据
+    setUserInfo,
+    // 设置闹钟
+    setBandAlarm,
+    // 设置单位制式
+    setUnitType,
+    // 设置显示时间格式
+    setTimeFormat,
+    // 设置自动点亮屏幕
+    setAutoLigten,
+    // 设置久坐提醒
+    setSitLongTimeAlert,
+    // 设置上次显示
+    setLastShow,
+    // 设置心率监测间隔
+    setHeartRateInterval,
+    // 设置功能显示
+    setFunctionDisplay,
+    // 获取固件版本号
+    getFirmwareVersion,
+    // 获取电量和记步总数
+    getBatteryDailyStepCount,
+    // 获取睡眠和心率总数
+    getSleepHeartCount,
     // 获取记步数据
-    getSteps,
+    getDailySteps,
     // 获取睡眠index
-    getSleepIndex,
+    getDailySleepIndex,
     // 获取睡眠record
-    getSleepRecord,
+    getDailySleepRecord,
     // 获取心率
-    getHeartRate;
+    getHeartRate,
+    // 获取今天的记步，睡眠，心率数据
+    getTodayData
 }

@@ -14,20 +14,32 @@ import android.os.Message;
 import android.text.TextUtils;
 
 import com.fitpolo.support.FitConstant;
+import com.fitpolo.support.OrderEnum;
 import com.fitpolo.support.callback.ConnStateCallback;
 import com.fitpolo.support.callback.GattCallback;
 import com.fitpolo.support.callback.OrderCallback;
 import com.fitpolo.support.callback.ScanDeviceCallback;
 import com.fitpolo.support.entity.BaseResponse;
 import com.fitpolo.support.entity.BleDevice;
-import com.fitpolo.support.entity.InnerVersion;
+import com.fitpolo.support.entity.DailySleep;
+import com.fitpolo.support.entity.DailyStep;
+import com.fitpolo.support.entity.HeartRate;
 import com.fitpolo.support.log.LogModule;
+import com.fitpolo.support.task.BandAlarmTask;
+import com.fitpolo.support.task.DailySleepRecordTask;
 import com.fitpolo.support.task.OrderTask;
 import com.fitpolo.support.utils.BaseHandler;
+import com.fitpolo.support.utils.ComplexDataParse;
+import com.fitpolo.support.utils.DigitalConver;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -84,6 +96,8 @@ public class BluetoothModule {
         BluetoothManager bluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = bluetoothManager.getAdapter();
         mHandler = new ServiceHandler(this);
+        mExecutorService = Executors.newSingleThreadExecutor();
+
     }
 
     /**
@@ -122,8 +136,9 @@ public class BluetoothModule {
             connCallBack.onConnFailure(FitConstant.CONN_ERROR_CODE_CONNECTED);
             return;
         }
+        mDeviceAddress = address;
         BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
-        BluetoothGattCallback callback = getBluetoothGattCallback(connCallBack);
+        BluetoothGattCallback callback = getBluetoothGattCallback(context, connCallBack);
         mBluetoothGatt = device.connectGatt(context, false, callback);
     }
 
@@ -148,10 +163,21 @@ public class BluetoothModule {
         }
     }
 
-    private int mStepCount;
+
+    private String mDeviceAddress;
+    private boolean isOpenReConnect;
+    private boolean isSupportHeartRate;
+    private boolean isSupportCurrentData;
+    private String mFirmwareVersion;
+    private int mBatteryQuantity;
+    private int mDailyStepCount;
     private int mSleepIndexCount;
     private int mSleepRecordCount;
     private int mHeartRateCount;
+    private ArrayList<DailyStep> mDailySteps;
+    private ArrayList<DailySleep> mDailySleeps;
+    private HashMap<Integer, DailySleep> mSleepsMap;
+    private ArrayList<HeartRate> mHeartRates;
 
 
     /**
@@ -178,13 +204,13 @@ public class BluetoothModule {
     private void orderTimeoutHandler(final OrderTask task) {
         long delayTime = 3000;
         switch (task.getOrder()) {
-            case getSteps:
-                delayTime = mStepCount == 0 ? delayTime : 1000 * mStepCount;
+            case getDailySteps:
+                delayTime = mDailyStepCount == 0 ? delayTime : 1000 * mDailyStepCount;
                 break;
-            case getSleepIndex:
+            case getDailySleepIndex:
                 delayTime = mSleepIndexCount == 0 ? delayTime : 1000 * mSleepIndexCount;
                 break;
-            case getSleepRecord:
+            case getDailySleepRecord:
                 delayTime = mSleepRecordCount == 0 ? delayTime : 1000 * mSleepRecordCount;
                 break;
             case getHeartRate:
@@ -196,6 +222,62 @@ public class BluetoothModule {
             public void run() {
                 if (task.getResponse().code != FitConstant.ORDER_CODE_SUCCESS) {
                     task.getResponse().code = FitConstant.ORDER_CODE_ERROR_TIMEOUT;
+                    switch (task.getOrder()) {
+                        case getInnerVersion:
+                            LogModule.i("获取内部版本超时");
+                            break;
+                        case getFirmwareVersion:
+                            LogModule.i("获取固件版本超时");
+                            break;
+                        case getBatteryDailyStepCount:
+                            LogModule.i("获取电量和记步总数超时");
+                            break;
+                        case getSleepHeartCount:
+                            LogModule.i("获取睡眠和心率总数超时");
+                            break;
+                        case getDailySteps:
+                            LogModule.i("获取记步数据超时");
+                            break;
+                        case getDailySleepIndex:
+                            LogModule.i("获取睡眠index超时");
+                            break;
+                        case getDailySleepRecord:
+                            LogModule.i("获取睡眠record超时");
+                            break;
+                        case getHeartRate:
+                            LogModule.i("获取心率数据超时");
+                            break;
+                        case getTodayData:
+                            LogModule.i("获取当天数据超时");
+                            break;
+                        case setBandAlarm:
+                            LogModule.i("设置闹钟数据超时");
+                            break;
+                        case setAutoLigten:
+                            LogModule.i("设置翻腕自动亮屏超时");
+                            break;
+                        case setSystemTime:
+                            LogModule.i("设置手环时间超时");
+                            break;
+                        case setUserInfo:
+                            LogModule.i("设置用户信息超时");
+                            break;
+                        case setUnitType:
+                            LogModule.i("设置单位类型超时");
+                            break;
+                        case setSitLongTimeAlert:
+                            LogModule.i("设置久坐提醒超时");
+                            break;
+                        case setLastShow:
+                            LogModule.i("设置最后显示超时");
+                            break;
+                        case setHeartRateInterval:
+                            LogModule.i("设置心率时间间隔超时");
+                            break;
+                        case setFunctionDisplay:
+                            LogModule.i("设置功能显示超时");
+                            break;
+                    }
                     task.getCallback().onOrderTimeout(task.getOrder());
                     mQueue.poll();
                     executeOrder(task.getCallback());
@@ -209,10 +291,82 @@ public class BluetoothModule {
      * @Author wenzheng.liu
      * @Description 判断是否已连接手环
      */
-    private boolean isConnDevice(Context context, String address) {
+    public boolean isConnDevice(Context context, String address) {
         BluetoothManager bluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
         int connState = bluetoothManager.getConnectionState(mBluetoothAdapter.getRemoteDevice(address), BluetoothProfile.GATT);
         return connState == BluetoothProfile.STATE_CONNECTED;
+    }
+
+    /**
+     * @Date 2017/5/12
+     * @Author wenzheng.liu
+     * @Description 是否支持心率
+     */
+    public boolean isSupportHeartRate() {
+        return isSupportHeartRate;
+    }
+
+    /**
+     * @Date 2017/5/12
+     * @Author wenzheng.liu
+     * @Description 是否支持同步当天数据
+     */
+    public boolean isSupportCurrentData() {
+        return isSupportCurrentData;
+    }
+
+    /**
+     * @Date 2017/5/14 0014
+     * @Author wenzheng.liu
+     * @Description 设置重连
+     */
+    public void setOpenReConnect(boolean openReConnect) {
+        isOpenReConnect = openReConnect;
+    }
+
+    /**
+     * @Date 2017/5/15
+     * @Author wenzheng.liu
+     * @Description 获取固件版本号
+     */
+    public String getFirmwareVersion() {
+        return mFirmwareVersion;
+    }
+
+    /**
+     * @Date 2017/5/15
+     * @Author wenzheng.liu
+     * @Description 获取电池电量
+     */
+    public int getBatteryQuantity() {
+        return mBatteryQuantity;
+    }
+
+    /**
+     * @Date 2017/5/15
+     * @Author wenzheng.liu
+     * @Description 获取记步数据
+     */
+    public ArrayList<DailyStep> getDailySteps() {
+        return mDailySteps;
+    }
+
+    /**
+     * @Date 2017/5/15
+     * @Author wenzheng.liu
+     * @Description 获取睡眠数据
+     */
+    public ArrayList<DailySleep> getDailySleeps() {
+        return mDailySleeps;
+    }
+
+    /**
+     * @Date 2017/5/15
+     * @Author wenzheng.liu
+     * @Description 获取心率数据
+     */
+    public ArrayList<HeartRate> getHeartRates() {
+        return mHeartRates;
     }
 
     class FitLeScanCallback implements BluetoothAdapter.LeScanCallback {
@@ -262,12 +416,13 @@ public class BluetoothModule {
     }
 
     /**
+     * @param context
      * @param connCallBack
      * @Date 2017/5/10
      * @Author wenzheng.liu
      * @Description 获取蓝牙连接回调
      */
-    private BluetoothGattCallback getBluetoothGattCallback(final ConnStateCallback connCallBack) {
+    private BluetoothGattCallback getBluetoothGattCallback(final Context context, final ConnStateCallback connCallBack) {
         BluetoothGattCallback callback = new CustomGattCallback(new GattCallback() {
             @Override
             public void onServicesDiscovered() {
@@ -284,46 +439,81 @@ public class BluetoothModule {
             public void onConnFailure() {
                 disConnectBle();
                 connCallBack.onConnFailure(FitConstant.CONN_ERROR_CODE_FAILURE);
+                startReConnect(context, connCallBack);
             }
 
             @Override
             public void onDisConn() {
                 disConnectBle();
                 connCallBack.onDisconnect();
+                startReConnect(context, connCallBack);
             }
 
             @Override
             public void onResponse(BluetoothGattCharacteristic characteristic) {
                 byte[] data = characteristic.getValue();
                 LogModule.i("接收数据：");
-                String[] formatDatas = formatData(data);
+                String[] formatDatas = DigitalConver.formatData(data);
                 OrderTask task = mQueue.peek();
                 if (formatDatas != null && formatDatas.length > 0) {
                     switch (task.getOrder()) {
                         case getInnerVersion:
-                            InnerVersion version = (InnerVersion) task.getResponse();
-                            version.code = FitConstant.ORDER_CODE_SUCCESS;
-                            if (formatDatas.length > 4) {
-                                version.isOldBand = false;
-                                String rateShow = formatDatas[3].substring(formatDatas[3].length() - 1, formatDatas[3].length());
-                                if (Integer.parseInt(rateShow) == 1) {
-                                    version.isSupportHeartRate = true;
-                                } else {
-                                    version.isSupportHeartRate = false;
-                                }
-                            } else {
-                                version.isOldBand = true;
-                            }
-                            task.getCallback().onOrderResult(task.getOrder(), version);
-                            mQueue.poll();
-                            executeOrder(task.getCallback());
+                            LogModule.i("获取内部版本");
+                            formatInnerTask(formatDatas, task);
                             break;
+                        case getFirmwareVersion:
+                            LogModule.i("获取固件版本");
+                            formatFirmwareTask(formatDatas, task);
+                            break;
+                        case getBatteryDailyStepCount:
+                            LogModule.i("获取电量和记步总数");
+                            formatBatteryDailyStepCountTask(formatDatas, task);
+                            break;
+                        case getSleepHeartCount:
+                            LogModule.i("获取睡眠和心率总数");
+                            formatSleepHeartCountTask(formatDatas, task);
+                            break;
+                        case getDailySteps:
+                            LogModule.i("获取记步数据");
+                            formatDailyStepsTask(formatDatas, task);
+                            break;
+                        case getDailySleepIndex:
+                            LogModule.i("获取睡眠index");
+                            formatDailySleepIndexTask(formatDatas, task);
+                            break;
+                        case getDailySleepRecord:
+                            LogModule.i("获取睡眠record");
+                            formatDailySleepRecordTask(formatDatas, task);
+                            break;
+                        case getHeartRate:
+                            LogModule.i("获取心率数据");
+                            formatHeartRateTask(formatDatas, task);
+                            break;
+                        case getTodayData:
+                            LogModule.i("获取当天数据");
+                            formatTodayData(formatDatas, task);
+                            break;
+                        case setBandAlarm:
+                            LogModule.i("设置闹钟数据");
+                            formatBandAlarmTask(task);
+                            break;
+                        case setAutoLigten:
+                            LogModule.i("设置翻腕自动亮屏");
                         case setSystemTime:
-                            BaseResponse response = task.getResponse();
-                            response.code = FitConstant.ORDER_CODE_SUCCESS;
-                            task.getCallback().onOrderResult(task.getOrder(), response);
-                            mQueue.poll();
-                            executeOrder(task.getCallback());
+                            LogModule.i("设置手环时间");
+                        case setUserInfo:
+                            LogModule.i("设置用户信息");
+                        case setUnitType:
+                            LogModule.i("设置单位类型");
+                        case setSitLongTimeAlert:
+                            LogModule.i("设置久坐提醒");
+                        case setLastShow:
+                            LogModule.i("设置最后显示");
+                        case setHeartRateInterval:
+                            LogModule.i("设置心率时间间隔");
+                        case setFunctionDisplay:
+                            LogModule.i("设置功能显示");
+                            formatCommonOrder(task);
                             break;
                     }
                 }
@@ -331,6 +521,316 @@ public class BluetoothModule {
             }
         });
         return callback;
+    }
+
+    private void formatTodayData(String[] formatDatas, OrderTask task) {
+        BaseResponse response = task.getResponse();
+        int header = Integer.parseInt(DigitalConver.decodeToString(formatDatas[0]));
+        if (header == FitConstant.RESPONSE_HEADER_STEP) {
+            if (mDailyStepCount > 0) {
+                mDailySteps.add(ComplexDataParse.parseDailyStep(formatDatas));
+                mDailyStepCount--;
+                if (mDailyStepCount > 0) {
+                    LogModule.i("还有" + mDailyStepCount + "条记步数据未同步");
+                    return;
+                } else if (mSleepIndexCount != 0 || mSleepRecordCount != 0 || mHeartRateCount != 0) {
+                    return;
+                }
+            }
+        } else if (header == FitConstant.RESPONSE_HEADER_SLEEP_INDEX) {
+            if (mSleepIndexCount > 0) {
+                mDailySleeps.add(ComplexDataParse.parseDailySleepIndex(formatDatas, mSleepsMap));
+                mSleepIndexCount--;
+                if (mSleepIndexCount > 0) {
+                    LogModule.i("还有" + mSleepIndexCount + "条睡眠index数据未同步");
+                }
+            }
+            return;
+        } else if (header == FitConstant.RESPONSE_HEADER_SLEEP_RECORD) {
+            if (mSleepRecordCount > 0) {
+                // 处理record
+                ComplexDataParse.parseDailySleepRecord(formatDatas, mSleepsMap);
+                mSleepRecordCount--;
+                if (mSleepRecordCount > 0) {
+                    LogModule.i("还有" + mSleepRecordCount + "条睡眠record数据未同步");
+                }
+            }
+            return;
+        } else if (header == FitConstant.RESPONSE_HEADER_HEART_RATE) {
+            if (mHeartRateCount > 0) {
+                ComplexDataParse.parseHeartRate(formatDatas, mHeartRates);
+                mHeartRateCount--;
+                if (mHeartRateCount > 0) {
+                    LogModule.i("还有" + mHeartRateCount + "条心率数据未同步");
+                    return;
+                }
+            }
+            Collections.sort(mHeartRates);
+        } else {
+            mDailyStepCount = 1;
+            mSleepIndexCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[2]));
+            mSleepRecordCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[3]));
+            mHeartRateCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[4]));
+            if (mDailySteps != null) {
+                mDailySteps.clear();
+            } else {
+                mDailySteps = new ArrayList<>();
+            }
+            if (mDailySleeps != null) {
+                mDailySleeps.clear();
+            } else {
+                mDailySleeps = new ArrayList<>();
+            }
+            if (mSleepsMap != null) {
+                mSleepsMap.clear();
+            } else {
+                mSleepsMap = new HashMap<>();
+            }
+            if (mHeartRates != null) {
+                mHeartRates.clear();
+            } else {
+                mHeartRates = new ArrayList<>();
+            }
+            response.code = FitConstant.ORDER_CODE_SUCCESS;
+            return;
+        }
+        task.getCallback().onOrderResult(task.getOrder(), response);
+        mQueue.poll();
+        executeOrder(task.getCallback());
+    }
+
+    private void formatDailyStepsTask(String[] formatDatas, OrderTask task) {
+        BaseResponse response = task.getResponse();
+        if (mDailyStepCount > 0) {
+            if (mDailySteps == null) {
+                mDailySteps = new ArrayList<>();
+            }
+            mDailySteps.add(ComplexDataParse.parseDailyStep(formatDatas));
+            mDailyStepCount--;
+            if (mDailyStepCount > 0) {
+                LogModule.i("还有" + mDailyStepCount + "条记步数据未同步");
+                return;
+            }
+        }
+        response.code = FitConstant.ORDER_CODE_SUCCESS;
+        task.getCallback().onOrderResult(task.getOrder(), response);
+        mQueue.poll();
+        executeOrder(task.getCallback());
+    }
+
+    private void formatHeartRateTask(String[] formatDatas, OrderTask task) {
+        BaseResponse response = task.getResponse();
+        if (mHeartRateCount > 0) {
+            if (mHeartRates == null) {
+                mHeartRates = new ArrayList<>();
+            }
+            ComplexDataParse.parseHeartRate(formatDatas, mHeartRates);
+            mHeartRateCount--;
+            if (mHeartRateCount > 0) {
+                LogModule.i("还有" + mHeartRateCount + "条心率数据未同步");
+                return;
+            }
+        }
+        Collections.sort(mHeartRates);
+        response.code = FitConstant.ORDER_CODE_SUCCESS;
+        task.getCallback().onOrderResult(task.getOrder(), response);
+        mQueue.poll();
+        executeOrder(task.getCallback());
+    }
+
+    private void formatDailySleepIndexTask(String[] formatDatas, OrderTask task) {
+        BaseResponse response = task.getResponse();
+        if (mSleepIndexCount > 0) {
+            if (mDailySleeps == null) {
+                mDailySleeps = new ArrayList<>();
+            }
+            if (mSleepsMap == null) {
+                mSleepsMap = new HashMap<>();
+            }
+            mDailySleeps.add(ComplexDataParse.parseDailySleepIndex(formatDatas, mSleepsMap));
+            mSleepIndexCount--;
+            if (mSleepIndexCount > 0) {
+                LogModule.i("还有" + mSleepIndexCount + "条睡眠index数据未同步");
+                return;
+            }
+        }
+        response.code = FitConstant.ORDER_CODE_SUCCESS;
+        // 请求完index后请求record
+        DailySleepRecordTask sleepRecordTask = new DailySleepRecordTask(task.getCallback());
+        writeCharacteristicData(mBluetoothGatt, sleepRecordTask.assemble());
+        orderTimeoutHandler(sleepRecordTask);
+    }
+
+    private void formatDailySleepRecordTask(String[] formatDatas, OrderTask task) {
+        BaseResponse response = task.getResponse();
+        if (mSleepRecordCount > 0) {
+            // 处理record
+            ComplexDataParse.parseDailySleepRecord(formatDatas, mSleepsMap);
+            mSleepRecordCount--;
+            if (mSleepRecordCount > 0) {
+                LogModule.i("还有" + mSleepRecordCount + "条睡眠record数据未同步");
+                return;
+            }
+        }
+        response.code = FitConstant.ORDER_CODE_SUCCESS;
+        // 重新设置回index头，方便前端调用
+        task.setOrder(OrderEnum.getDailySleepIndex);
+        task.getCallback().onOrderResult(task.getOrder(), response);
+        mQueue.poll();
+        executeOrder(task.getCallback());
+    }
+
+    private void formatSleepHeartCountTask(String[] formatDatas, OrderTask task) {
+        BaseResponse response = task.getResponse();
+        response.code = FitConstant.ORDER_CODE_SUCCESS;
+        mSleepIndexCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[2]));
+        mSleepRecordCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[3]));
+        mHeartRateCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[4]));
+        if (mDailySleeps != null) {
+            mDailySleeps.clear();
+        } else {
+            mDailySleeps = new ArrayList<>();
+        }
+        if (mSleepsMap != null) {
+            mSleepsMap.clear();
+        } else {
+            mSleepsMap = new HashMap<>();
+        }
+        if (mHeartRates != null) {
+            mHeartRates.clear();
+        } else {
+            mHeartRates = new ArrayList<>();
+        }
+        task.getCallback().onOrderResult(task.getOrder(), response);
+        mQueue.poll();
+        executeOrder(task.getCallback());
+    }
+
+    private void formatBatteryDailyStepCountTask(String[] formatDatas, OrderTask task) {
+        BaseResponse response = task.getResponse();
+        response.code = FitConstant.ORDER_CODE_SUCCESS;
+        mDailyStepCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[1]));
+        if (mDailySteps != null) {
+            mDailySteps.clear();
+        } else {
+            mDailySteps = new ArrayList<>();
+        }
+        mBatteryQuantity = Integer.parseInt(DigitalConver.decodeToString(formatDatas[3]));
+        task.getCallback().onOrderResult(task.getOrder(), response);
+        mQueue.poll();
+        executeOrder(task.getCallback());
+    }
+
+    private void formatFirmwareTask(String[] formatDatas, OrderTask task) {
+        BaseResponse response = task.getResponse();
+        response.code = FitConstant.ORDER_CODE_SUCCESS;
+        int major = Integer.parseInt(DigitalConver.decodeToString(formatDatas[1]));
+        int minor = Integer.parseInt(DigitalConver.decodeToString(formatDatas[2]));
+        int revision = Integer.parseInt(DigitalConver.decodeToString(formatDatas[3]));
+        String version = String.format("%s.%s.%s", major, minor, revision);
+        mFirmwareVersion = version;
+        task.getCallback().onOrderResult(task.getOrder(), response);
+        mQueue.poll();
+        executeOrder(task.getCallback());
+    }
+
+    private void formatBandAlarmTask(OrderTask task) {
+        BandAlarmTask bandAlarmTask = (BandAlarmTask) task;
+        BaseResponse response = bandAlarmTask.getResponse();
+        response.code = FitConstant.ORDER_CODE_SUCCESS;
+        if (!bandAlarmTask.isAlarmFinish()) {
+            bandAlarmTask.setAlarmFinish(true);
+        } else {
+            bandAlarmTask.getCallback().onOrderResult(task.getOrder(), response);
+            bandAlarmTask.setAlarmFinish(false);
+            mQueue.poll();
+        }
+        executeOrder(task.getCallback());
+    }
+
+    private void formatInnerTask(String[] formatDatas, OrderTask task) {
+        BaseResponse response = task.getResponse();
+        response.code = FitConstant.ORDER_CODE_SUCCESS;
+        if (formatDatas.length > 4) {
+            isSupportCurrentData = true;
+            String rateShow = formatDatas[3].substring(formatDatas[3].length() - 1, formatDatas[3].length());
+            if (Integer.parseInt(rateShow) == 1) {
+                isSupportHeartRate = true;
+            } else {
+                isSupportHeartRate = false;
+            }
+        } else {
+            isSupportCurrentData = false;
+        }
+        task.getCallback().onOrderResult(task.getOrder(), response);
+        mQueue.poll();
+        executeOrder(task.getCallback());
+    }
+
+    private void formatCommonOrder(OrderTask task) {
+        BaseResponse response = task.getResponse();
+        response.code = FitConstant.ORDER_CODE_SUCCESS;
+        task.getCallback().onOrderResult(task.getOrder(), response);
+        mQueue.poll();
+        executeOrder(task.getCallback());
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    //
+    ///////////////////////////////////////////////////////////////////////////
+
+    private ServiceHandler mHandler;
+
+    private class ServiceHandler extends BaseHandler<BluetoothModule> {
+
+        public ServiceHandler(BluetoothModule module) {
+            super(module);
+        }
+
+        @Override
+        protected void handleMessage(BluetoothModule module, Message msg) {
+        }
+    }
+
+    private ExecutorService mExecutorService;
+    private ReConnRunnable mrunnableReconnect;
+
+    private void startReConnect(Context context, ConnStateCallback connCallBack) {
+        if (isOpenReConnect) {
+            LogModule.i("开始重连...");
+            mrunnableReconnect = new ReConnRunnable(context, connCallBack);
+            mExecutorService.execute(mrunnableReconnect);
+        }
+    }
+
+    private class ReConnRunnable implements Runnable {
+        private Context mContext;
+        private ConnStateCallback mConnCallBack;
+
+        private ReConnRunnable(Context context, ConnStateCallback connCallBack) {
+            this.mContext = context;
+            this.mConnCallBack = connCallBack;
+        }
+
+        @Override
+        public void run() {
+            try {
+                if (!isConnDevice(mContext, mDeviceAddress)) {
+                    LogModule.i("设备未连接，重连中...");
+                    if (isBluetoothOpen()) {
+                        createBluetoothGatt(mContext, mDeviceAddress, mConnCallBack);
+                    } else {
+                        LogModule.i("蓝牙未开启...");
+                        Thread.sleep(30000);
+                        mExecutorService.execute(mrunnableReconnect);
+                    }
+                } else {
+                    LogModule.i("设备已连接...");
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /**
@@ -356,12 +856,16 @@ public class BluetoothModule {
                         if ((charaProp | BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
                             if (mNotifyCharacteristic != null) {
                                 setCharacteristicNotification(mBluetoothGatt, mNotifyCharacteristic, false);
-                                mNotifyCharacteristic = null;
+                                synchronized (LOCK) {
+                                    mNotifyCharacteristic = null;
+                                }
                             }
                             mBluetoothGatt.readCharacteristic(gattCharacteristic);
                         }
                         if ((charaProp | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
-                            mNotifyCharacteristic = gattCharacteristic;
+                            synchronized (LOCK) {
+                                mNotifyCharacteristic = gattCharacteristic;
+                            }
                             setCharacteristicNotification(mBluetoothGatt, gattCharacteristic, true);
                         }
                     }
@@ -415,49 +919,11 @@ public class BluetoothModule {
             return;
         }
         LogModule.i("发送数据：");
-        formatData(byteArray);
+        DigitalConver.formatData(byteArray);
         characteristic.setValue(byteArray);
         characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
         mBluetoothGatt.writeCharacteristic(characteristic);
     }
 
-    private ServiceHandler mHandler;
 
-
-    private static class ServiceHandler extends BaseHandler<BluetoothModule> {
-
-        public ServiceHandler(BluetoothModule module) {
-            super(module);
-        }
-
-        @Override
-        protected void handleMessage(BluetoothModule module, Message msg) {
-        }
-    }
-
-    /**
-     * @Date 2017/5/10
-     * @Author wenzheng.liu
-     * @Description 格式化数据
-     */
-    private String[] formatData(byte[] data) {
-        if (data != null && data.length > 0) {
-            StringBuilder stringBuilder = new StringBuilder(data.length);
-            for (byte byteChar : data)
-                stringBuilder.append(byte2HexString(byteChar));
-            LogModule.i(stringBuilder.toString());
-            String[] datas = stringBuilder.toString().split(" ");
-            return datas;
-        }
-        return null;
-    }
-
-    /**
-     * @Date 2017/5/10
-     * @Author wenzheng.liu
-     * @Description byte转16进制
-     */
-    private String byte2HexString(byte b) {
-        return String.format("%02X ", b);
-    }
 }

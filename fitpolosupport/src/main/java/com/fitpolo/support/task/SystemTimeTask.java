@@ -22,7 +22,7 @@ public class SystemTimeTask extends OrderTask {
     }
 
     @Override
-    public byte[] assemble() {
+    public byte[] assemble(Object ...objects) {
         Calendar calendar = Calendar.getInstance();
         int year = calendar.get(Calendar.YEAR);
         int month = calendar.get(Calendar.MONTH) + 1;

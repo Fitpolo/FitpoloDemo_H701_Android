@@ -24,7 +24,7 @@ public abstract class OrderTask {
     }
 
 
-    public abstract byte[] assemble();
+    public abstract byte[] assemble(Object ...objects);
 
 
     public OrderCallback getCallback() {
