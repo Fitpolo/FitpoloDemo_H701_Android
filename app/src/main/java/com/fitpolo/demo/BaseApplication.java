@@ -1,7 +1,9 @@
 package com.fitpolo.demo;
 
 import android.app.Application;
+import android.content.Intent;
 
+import com.fitpolo.demo.service.FitpoloService;
 import com.fitpolo.support.Fitpolo;
 
 /**
@@ -16,5 +18,6 @@ public class BaseApplication extends Application {
         super.onCreate();
         // 初始化
         Fitpolo.init(this);
+        startService(new Intent(this, FitpoloService.class));
     }
 }

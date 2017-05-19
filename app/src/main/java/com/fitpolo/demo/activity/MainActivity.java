@@ -1,24 +1,28 @@
 package com.fitpolo.demo.activity;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.util.Log;
+import android.os.IBinder;
+import android.support.v4.content.LocalBroadcastManager;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.fitpolo.demo.DemoConstant;
 import com.fitpolo.demo.R;
 import com.fitpolo.demo.adapter.DeviceAdapter;
-import com.fitpolo.support.bluetooth.BluetoothModule;
-import com.fitpolo.support.callback.ConnStateCallback;
-import com.fitpolo.support.callback.ScanDeviceCallback;
+import com.fitpolo.demo.service.FitpoloService;
 import com.fitpolo.support.entity.BleDevice;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -30,23 +34,32 @@ import butterknife.ButterKnife;
  * @Description
  */
 
-public class MainActivity extends Activity implements AdapterView.OnItemClickListener, ScanDeviceCallback {
+public class MainActivity extends Activity implements AdapterView.OnItemClickListener {
     private static final String TAG = "MainActivity";
     @Bind(R.id.lv_device)
     ListView lvDevice;
-    @Bind(R.id.btn_search)
-    Button btnSearch;
 
-    private HashMap<String, BleDevice> mMap;
     private ArrayList<BleDevice> mDatas;
     private DeviceAdapter mAdapter;
+    private LocalBroadcastManager mBroadcastManager;
+    private ProgressDialog mDialog;
+    private FitpoloService mService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_layout);
         ButterKnife.bind(this);
-        mMap = new HashMap<>();
+        mBroadcastManager = LocalBroadcastManager.getInstance(this);
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(DemoConstant.ACTION_START_SCAN);
+        filter.addAction(DemoConstant.ACTION_STOP_SCAN);
+        filter.addAction(DemoConstant.ACTION_CONN_SUCCESS);
+        filter.addAction(DemoConstant.ACTION_CONN_FAILURE);
+        filter.addAction(DemoConstant.ACTION_DISCONNECT);
+        mBroadcastManager.registerReceiver(mReceiver, filter);
+        bindService(new Intent(this, FitpoloService.class), mServiceConnection, BIND_AUTO_CREATE);
+        mDialog = new ProgressDialog(this);
         mDatas = new ArrayList<>();
         mAdapter = new DeviceAdapter(this);
         mAdapter.setItems(mDatas);
@@ -55,46 +68,65 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
     }
 
     public void searchDevices(View view) {
-        mDatas.clear();
         mAdapter.notifyDataSetChanged();
-        BluetoothModule.getInstance().startScanDevice(this);
+        mService.startScanDevice();
     }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         BleDevice device = (BleDevice) parent.getItemAtPosition(position);
-        BluetoothModule.getInstance().createBluetoothGatt(this, device.address, new ConnStateCallback() {
-            @Override
-            public void onConnSuccess() {
-                startActivity(new Intent(MainActivity.this, SendOrderActivity.class));
-            }
-
-            @Override
-            public void onConnFailure(int errorCode) {
-            }
-
-            @Override
-            public void onDisconnect() {
-            }
-        });
+        mService.startConnDevice(device.address);
     }
+
+    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent != null) {
+                String action = intent.getAction();
+                if (DemoConstant.ACTION_START_SCAN.equals(action)) {
+                    mDialog.setMessage("正在扫描设备...");
+                    mDialog.show();
+                }
+                if (DemoConstant.ACTION_STOP_SCAN.equals(action)) {
+                    mDialog.dismiss();
+                    mDatas = (ArrayList<BleDevice>) intent.getSerializableExtra("devices");
+                    mAdapter.setItems(mDatas);
+                    mAdapter.notifyDataSetChanged();
+                }
+                if (DemoConstant.ACTION_CONN_SUCCESS.equals(action)) {
+                    Toast.makeText(MainActivity.this, "连接成功", Toast.LENGTH_SHORT).show();
+                    startActivity(new Intent(MainActivity.this, SendOrderActivity.class));
+                }
+                if (DemoConstant.ACTION_CONN_FAILURE.equals(action)) {
+                    Toast.makeText(MainActivity.this, "连接失败", Toast.LENGTH_SHORT).show();
+                }
+                if (DemoConstant.ACTION_DISCONNECT.equals(action)) {
+                    Toast.makeText(MainActivity.this, "断开连接", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+    };
+
 
     @Override
-    public void onStartScan() {
-        Log.i(TAG, "onStartScan: ");
-        btnSearch.setEnabled(false);
+    protected void onDestroy() {
+        super.onDestroy();
+        mBroadcastManager.unregisterReceiver(mReceiver);
+        unbindService(mServiceConnection);
+        stopService(new Intent(this, FitpoloService.class));
     }
 
-    @Override
-    public void onScanDevice(BleDevice device) {
-        mMap.put(device.name, device);
-    }
+    private ServiceConnection mServiceConnection = new ServiceConnection() {
 
-    @Override
-    public void onStopScan() {
-        Log.i(TAG, "onStopScan: ");
-        btnSearch.setEnabled(true);
-        mDatas.addAll(mMap.values());
-        mAdapter.notifyDataSetChanged();
-    }
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mService = ((FitpoloService.LocalBinder) service).getService();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mService = null;
+        }
+    };
 }

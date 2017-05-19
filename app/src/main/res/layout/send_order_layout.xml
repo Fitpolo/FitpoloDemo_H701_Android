@@ -4,12 +4,118 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <Button
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="获取内部版本"
-        android:onClick="getInnerVersion"/>
+        android:layout_height="match_parent">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="getInnerVersion"
+                android:text="获取内部版本" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="setSystemTime"
+                android:text="设置系统时间" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="setUserInfo"
+                android:text="设置个人数据" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="setBandAlarm"
+                android:text="设置闹钟数据" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="setUnitType"
+                android:text="设置单位制式" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="setTimeFormat"
+                android:text="设置显示时间格式" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="setAutoLigten"
+                android:text="设置自动点亮屏幕" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="setSitLongTimeAlert"
+                android:text="设置久坐提醒" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="setLastShow"
+                android:text="设置上次显示" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="setHeartRateInterval"
+                android:text="设置心率监测间隔" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="setFunctionDisplay"
+                android:text="设置功能显示" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="getBatteryDailyStepCount"
+                android:text="获取电量和记步总数" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="getSleepHeartCount"
+                android:text="获取睡眠和心率总数" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="getDailySteps"
+                android:text="获取记步数据" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="getDailySleeps"
+                android:text="获取睡眠数据" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="getHeartRate"
+                android:text="获取心率" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="getTodayData"
+                android:text="获取今天的记步，睡眠，心率数据" />
+        </LinearLayout>
+    </ScrollView>
 
 
 </LinearLayout>

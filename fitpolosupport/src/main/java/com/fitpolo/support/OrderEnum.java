@@ -1,12 +1,14 @@
 package com.fitpolo.support;
 
+import java.io.Serializable;
+
 /**
  * @Date 2017/5/11
  * @Author wenzheng.liu
  * @Description 命令枚举
  * @ClassPath com.fitpolo.support.OrderEnum
  */
-public enum OrderEnum {
+public enum OrderEnum implements Serializable {
     // 获取内部版本号
     getInnerVersion,
     // 设置系统时间

@@ -38,4 +38,12 @@ public class HeartRate implements Comparable<HeartRate> {
             return null;
         }
     }
+
+    @Override
+    public String toString() {
+        return "HeartRate{" +
+                "time='" + time + '\'' +
+                ", value='" + value + '\'' +
+                '}';
+    }
 }

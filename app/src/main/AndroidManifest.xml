@@ -19,6 +19,8 @@
         <activity
             android:name=".activity.SendOrderActivity"
             android:screenOrientation="portrait"></activity>
+
+        <service android:name=".service.FitpoloService" />
     </application>
 
 </manifest>
