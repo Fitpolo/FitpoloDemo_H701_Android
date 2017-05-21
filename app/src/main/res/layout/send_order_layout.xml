@@ -82,6 +82,12 @@
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:onClick="getFirmwareVersion"
+                android:text="获取固件版本号" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:onClick="getBatteryDailyStepCount"
                 android:text="获取电量和记步总数" />
 
@@ -114,6 +120,12 @@
                 android:layout_height="wrap_content"
                 android:onClick="getTodayData"
                 android:text="获取今天的记步，睡眠，心率数据" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="sendMultiOrders"
+                android:text="发送多个命令" />
         </LinearLayout>
     </ScrollView>
 

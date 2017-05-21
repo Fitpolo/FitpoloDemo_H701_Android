@@ -38,7 +38,7 @@ public class FitConstant {
     public static final int HEADER_SET_AUTO_LIGHTEN = 37;// 自动亮屏幕
     public static final int HEADER_SET_SIT_LONG_TIME_ALERT = 42;// 久坐提醒
     public static final int HEADER_SET_LAST_SHOW = 39;// 上次显示
-    public static final int RESPONSE_HEADER_STEP = 39;// 返回记步数据头
+    public static final int RESPONSE_HEADER_STEP = 146;// 返回记步数据头
     public static final int RESPONSE_HEADER_SLEEP_INDEX = 147;// 返回睡眠index数据头
     public static final int RESPONSE_HEADER_SLEEP_RECORD = 148;// 返回睡眠record数据头
     public static final int RESPONSE_HEADER_HEART_RATE = 168;// 返回心率数据头

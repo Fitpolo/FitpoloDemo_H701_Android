@@ -248,8 +248,8 @@ public class BluetoothModule {
                             LogModule.i("获取心率数据超时");
                             break;
                         case getTodayData:
-                            // LogModule.i("获取当天数据超时");
-                            return;
+                            LogModule.i("获取当天数据超时");
+                            break;
                         case setBandAlarm:
                             LogModule.i("设置闹钟数据超时");
                             break;
@@ -461,79 +461,79 @@ public class BluetoothModule {
                 if (formatDatas != null && formatDatas.length > 0 && task != null) {
                     switch (task.getOrder()) {
                         case getInnerVersion:
-                            LogModule.i("获取内部版本");
+                            LogModule.i("获取内部版本成功");
                             formatInnerTask(formatDatas, task);
                             break;
                         case getFirmwareVersion:
-                            LogModule.i("获取固件版本");
+                            LogModule.i("获取固件版本成功");
                             formatFirmwareTask(formatDatas, task);
                             break;
                         case getBatteryDailyStepCount:
-                            LogModule.i("获取电量和记步总数");
+                            LogModule.i("获取电量和记步总数成功");
                             formatBatteryDailyStepCountTask(formatDatas, task);
                             break;
                         case getSleepHeartCount:
-                            LogModule.i("获取睡眠和心率总数");
+                            LogModule.i("获取睡眠和心率总数成功");
                             formatSleepHeartCountTask(formatDatas, task);
                             break;
                         case getDailySteps:
-                            LogModule.i("获取记步数据");
+                            LogModule.i("获取记步数据成功");
                             formatDailyStepsTask(formatDatas, task);
                             break;
                         case getDailySleepIndex:
-                            LogModule.i("获取睡眠index");
+                            LogModule.i("获取睡眠index成功");
                             formatDailySleepIndexTask(formatDatas, task);
                             break;
                         case getDailySleepRecord:
-                            LogModule.i("获取睡眠record");
+                            LogModule.i("获取睡眠record成功");
                             formatDailySleepRecordTask(formatDatas, task);
                             break;
                         case getHeartRate:
-                            LogModule.i("获取心率数据");
+                            LogModule.i("获取心率数据成功");
                             formatHeartRateTask(formatDatas, task);
                             break;
                         case getTodayData:
-                            LogModule.i("获取当天数据");
+                            LogModule.i("获取当天数据成功");
                             formatTodayData(formatDatas, task);
                             break;
                         case setBandAlarm:
-                            LogModule.i("设置闹钟数据");
+                            LogModule.i("设置闹钟数据成功");
                             formatBandAlarmTask(task);
                             break;
                         case setAutoLigten:
-                            LogModule.i("设置翻腕自动亮屏");
+                            LogModule.i("设置翻腕自动亮屏成功");
                             formatCommonOrder(task);
                             break;
                         case setSystemTime:
-                            LogModule.i("设置手环时间");
+                            LogModule.i("设置手环时间成功");
                             formatCommonOrder(task);
                             break;
                         case setTimeFormat:
-                            LogModule.i("设置显示时间格式");
+                            LogModule.i("设置显示时间格式成功");
                             formatCommonOrder(task);
                             break;
                         case setUserInfo:
-                            LogModule.i("设置用户信息");
+                            LogModule.i("设置用户信息成功");
                             formatCommonOrder(task);
                             break;
                         case setUnitType:
-                            LogModule.i("设置单位类型");
+                            LogModule.i("设置单位类型成功");
                             formatCommonOrder(task);
                             break;
                         case setSitLongTimeAlert:
-                            LogModule.i("设置久坐提醒");
+                            LogModule.i("设置久坐提醒成功");
                             formatCommonOrder(task);
                             break;
                         case setLastShow:
-                            LogModule.i("设置最后显示");
+                            LogModule.i("设置最后显示成功");
                             formatCommonOrder(task);
                             break;
                         case setHeartRateInterval:
-                            LogModule.i("设置心率时间间隔");
+                            LogModule.i("设置心率时间间隔成功");
                             formatCommonOrder(task);
                             break;
                         case setFunctionDisplay:
-                            LogModule.i("设置功能显示");
+                            LogModule.i("设置功能显示成功");
                             formatCommonOrder(task);
                             break;
                     }
