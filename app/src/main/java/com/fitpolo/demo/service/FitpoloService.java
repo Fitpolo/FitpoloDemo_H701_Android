@@ -15,7 +15,6 @@ import com.fitpolo.support.callback.OrderCallback;
 import com.fitpolo.support.callback.ScanDeviceCallback;
 import com.fitpolo.support.entity.BaseResponse;
 import com.fitpolo.support.entity.BleDevice;
-import com.fitpolo.support.entity.HeartRate;
 import com.fitpolo.support.entity.req.BandAlarm;
 import com.fitpolo.support.entity.req.SitLongTimeAlert;
 import com.fitpolo.support.entity.req.UserInfo;
@@ -23,16 +22,21 @@ import com.fitpolo.support.log.LogModule;
 import com.fitpolo.support.task.AutoLightenTask;
 import com.fitpolo.support.task.BandAlarmTask;
 import com.fitpolo.support.task.BatteryDailyStepsCountTask;
+import com.fitpolo.support.task.ClearBandDataTask;
 import com.fitpolo.support.task.DailySleepIndexTask;
 import com.fitpolo.support.task.DailyStepsTask;
 import com.fitpolo.support.task.DailyTodayDataTask;
+import com.fitpolo.support.task.FirmwareVersionTask;
 import com.fitpolo.support.task.FunctionDisplayTask;
 import com.fitpolo.support.task.HeartRateIntervalTask;
 import com.fitpolo.support.task.HeartRateTask;
 import com.fitpolo.support.task.InnerVersionTask;
 import com.fitpolo.support.task.LastShowTask;
+import com.fitpolo.support.task.PhoneComingShakeTask;
+import com.fitpolo.support.task.ShakeBandTask;
 import com.fitpolo.support.task.SitLongTimeAlertTask;
 import com.fitpolo.support.task.SleepHeartCountTask;
+import com.fitpolo.support.task.SmsComingShakeTask;
 import com.fitpolo.support.task.SystemTimeTask;
 import com.fitpolo.support.task.TimeFormatTask;
 import com.fitpolo.support.task.UnitTypeTask;
@@ -57,6 +61,13 @@ public class FitpoloService extends Service implements ScanDeviceCallback, ConnS
     public void onCreate() {
         super.onCreate();
         mBroadcastManager = LocalBroadcastManager.getInstance(this);
+
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        BluetoothModule.getInstance().disConnectBle();
     }
 
     @Override
@@ -74,6 +85,7 @@ public class FitpoloService extends Service implements ScanDeviceCallback, ConnS
     public void startConnDevice(String address) {
         LogModule.i("开始连接设备...");
         BluetoothModule.getInstance().createBluetoothGatt(this, address, this);
+        BluetoothModule.getInstance().setOpenReConnect(true);
     }
 
     @Override
@@ -166,61 +178,112 @@ public class FitpoloService extends Service implements ScanDeviceCallback, ConnS
         TimeFormatTask task = new TimeFormatTask(this, timeFormat);
         BluetoothModule.getInstance().sendOrder(task);
     }
+
     public void setAutoLigten(int autoLighten) {
         LogModule.i("设置自动点亮屏幕...");
         AutoLightenTask task = new AutoLightenTask(this, autoLighten);
         BluetoothModule.getInstance().sendOrder(task);
     }
+
     public void setSitLongTimeAlert(SitLongTimeAlert alert) {
         LogModule.i("设置久坐提醒...");
         SitLongTimeAlertTask task = new SitLongTimeAlertTask(this, alert);
         BluetoothModule.getInstance().sendOrder(task);
     }
+
     public void setLastShow(int lastShow) {
         LogModule.i("设置上次显示...");
         LastShowTask task = new LastShowTask(this, lastShow);
         BluetoothModule.getInstance().sendOrder(task);
     }
+
     public void setHeartRateInterval(int heartRateInterval) {
         LogModule.i("设置心率监测间隔...");
         HeartRateIntervalTask task = new HeartRateIntervalTask(this, heartRateInterval);
         BluetoothModule.getInstance().sendOrder(task);
     }
+
     public void setFunctionDisplay(boolean[] functions) {
         LogModule.i("设置功能显示...");
         FunctionDisplayTask task = new FunctionDisplayTask(this, functions);
         BluetoothModule.getInstance().sendOrder(task);
     }
+
+    public void getFirmwareVersion() {
+        LogModule.i("获取获取固件版本号...");
+        FirmwareVersionTask task = new FirmwareVersionTask(this);
+        BluetoothModule.getInstance().sendOrder(task);
+    }
+
     public void getBatteryDailyStepCount() {
         LogModule.i("获取电量和记步总数...");
         BatteryDailyStepsCountTask task = new BatteryDailyStepsCountTask(this);
         BluetoothModule.getInstance().sendOrder(task);
     }
+
     public void getSleepHeartCount() {
         LogModule.i("获取睡眠和心率总数...");
         SleepHeartCountTask task = new SleepHeartCountTask(this);
         BluetoothModule.getInstance().sendOrder(task);
     }
+
     public void getDailySteps() {
         LogModule.i("获取记步数据...");
         DailyStepsTask task = new DailyStepsTask(this);
         BluetoothModule.getInstance().sendOrder(task);
     }
+
     public void getDailySleeps() {
         LogModule.i("获取睡眠数据...");
         DailySleepIndexTask task = new DailySleepIndexTask(this);
         BluetoothModule.getInstance().sendOrder(task);
     }
+
     public void getHeartRate() {
         LogModule.i("获取心率...");
         HeartRateTask task = new HeartRateTask(this);
         BluetoothModule.getInstance().sendOrder(task);
     }
+
     public void getTodayData() {
         LogModule.i("获取今天的记步，睡眠，心率数据...");
         DailyTodayDataTask task = new DailyTodayDataTask(this);
         BluetoothModule.getInstance().sendOrder(task);
     }
+
+    public void sendMultiOrders() {
+        LogModule.i("发送多个命令...");
+        SystemTimeTask systemTimeTask = new SystemTimeTask(this);
+        LastShowTask lastShowTask = new LastShowTask(this, 0);
+        AutoLightenTask autoLightenTask = new AutoLightenTask(this, 1);
+        FirmwareVersionTask firmwareVersionTask = new FirmwareVersionTask(this);
+        BluetoothModule.getInstance().sendOrder(systemTimeTask, lastShowTask, autoLightenTask, firmwareVersionTask);
+    }
+
+    public void setShakeBand() {
+        LogModule.i("设置手环震动...");
+        ShakeBandTask task = new ShakeBandTask(this);
+        BluetoothModule.getInstance().sendOrder(task);
+    }
+
+    public void clearBandData() {
+        LogModule.i("清除手环数据...");
+        ClearBandDataTask task = new ClearBandDataTask(this);
+        BluetoothModule.getInstance().sendOrder(task);
+    }
+
+    public void setPhoneComingShake(String showText, boolean isPhoneNumber) {
+        LogModule.i("设置来电震动...");
+        PhoneComingShakeTask task = new PhoneComingShakeTask(this, showText, isPhoneNumber);
+        BluetoothModule.getInstance().sendOrder(task);
+    }
+
+    public void setSmsComingShake(String showText, boolean isPhoneNumber) {
+        LogModule.i("设置短信震动...");
+        SmsComingShakeTask task = new SmsComingShakeTask(this, showText, isPhoneNumber);
+        BluetoothModule.getInstance().sendOrder(task);
+    }
+
 
     public class LocalBinder extends Binder {
         public FitpoloService getService() {

@@ -1,5 +1,6 @@
 package com.fitpolo.demo.activity;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
@@ -8,8 +9,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.view.View;
 import android.widget.AdapterView;
@@ -44,10 +49,43 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
     private LocalBroadcastManager mBroadcastManager;
     private ProgressDialog mDialog;
     private FitpoloService mService;
+    private static final int PERMISSION_REQUEST_CODE = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    || ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+
+                ActivityCompat.requestPermissions(this, new String[]{
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                                , Manifest.permission.WRITE_EXTERNAL_STORAGE}
+                        , PERMISSION_REQUEST_CODE);
+                return;
+            }
+        }
+        initContentView();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case PERMISSION_REQUEST_CODE: {
+                for (int i = 0; i < grantResults.length; i++) {
+                    if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
+                        Toast.makeText(MainActivity.this, "This app needs these permissions!", Toast.LENGTH_SHORT).show();
+                        MainActivity.this.finish();
+                        return;
+                    }
+                }
+                initContentView();
+            }
+        }
+    }
+
+    private void initContentView() {
         setContentView(R.layout.main_layout);
         ButterKnife.bind(this);
         mBroadcastManager = LocalBroadcastManager.getInstance(this);

@@ -102,6 +102,10 @@ public class SendOrderActivity extends Activity {
                             case setFunctionDisplay:
                                 Toast.makeText(SendOrderActivity.this, "设置功能显示成功", Toast.LENGTH_SHORT).show();
                                 break;
+                            case getFirmwareVersion:
+                                Toast.makeText(SendOrderActivity.this, "获取固件版本号成功", Toast.LENGTH_SHORT).show();
+                                LogModule.i("电池电量：" + BluetoothModule.getInstance().getFirmwareVersion());
+                                break;
                             case getBatteryDailyStepCount:
                                 Toast.makeText(SendOrderActivity.this, "获取电量和记步总数成功", Toast.LENGTH_SHORT).show();
                                 LogModule.i("电池电量：" + BluetoothModule.getInstance().getBatteryQuantity());
@@ -152,7 +156,7 @@ public class SendOrderActivity extends Activity {
 
                 }
                 if (DemoConstant.ACTION_ORDER_FINISH.equals(action)) {
-
+                    LogModule.i("任务全部完成！");
                 }
             }
         }
@@ -233,6 +237,10 @@ public class SendOrderActivity extends Activity {
         mService.setFunctionDisplay(functions);
     }
 
+    public void getFirmwareVersion(View view) {
+        mService.getFirmwareVersion();
+    }
+
     public void getBatteryDailyStepCount(View view) {
         mService.getBatteryDailyStepCount();
     }
@@ -255,5 +263,26 @@ public class SendOrderActivity extends Activity {
 
     public void getTodayData(View view) {
         mService.getTodayData();
+    }
+
+
+    public void sendMultiOrders(View view) {
+        mService.sendMultiOrders();
+    }
+
+    public void setShakeBand(View view) {
+        mService.setShakeBand();
+    }
+
+    public void setPhoneComingShake(View view) {
+        mService.setPhoneComingShake("1234567", true);
+    }
+
+    public void setSmsComingShake(View view) {
+        mService.setSmsComingShake("abcdef", false);
+    }
+
+    public void clearBandData(View view) {
+        mService.clearBandData();
     }
 }

@@ -142,6 +142,7 @@ public class BluetoothModule {
         if (mGattCallback == null) {
             mGattCallback = getBluetoothGattCallback(context, connCallBack);
         }
+        disConnectBle();
         mBluetoothGatt = device.connectGatt(context, false, mGattCallback);
     }
 

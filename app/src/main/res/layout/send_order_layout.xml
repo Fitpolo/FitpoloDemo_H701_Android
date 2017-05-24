@@ -82,6 +82,12 @@
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:onClick="getFirmwareVersion"
+                android:text="获取固件版本号" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:onClick="getBatteryDailyStepCount"
                 android:text="获取电量和记步总数" />
 
@@ -114,6 +120,32 @@
                 android:layout_height="wrap_content"
                 android:onClick="getTodayData"
                 android:text="获取今天的记步，睡眠，心率数据" />
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="setShakeBand"
+                android:text="设置手环震动" />
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="setPhoneComingShake"
+                android:text="设置来电震动" />
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="setSmsComingShake"
+                android:text="设置短信震动" />
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="clearBandData"
+                android:text="清除手环数据" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="sendMultiOrders"
+                android:text="发送多个命令" />
         </LinearLayout>
     </ScrollView>
 
