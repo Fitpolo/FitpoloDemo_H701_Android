@@ -263,25 +263,25 @@ public class FitpoloService extends Service implements ScanDeviceCallback, ConnS
     public void setShakeBand() {
         LogModule.i("设置手环震动...");
         ShakeBandTask task = new ShakeBandTask(this);
-        BluetoothModule.getInstance().sendOrder(task);
+        BluetoothModule.getInstance().sendDirectOrder(task);
     }
 
     public void clearBandData() {
         LogModule.i("清除手环数据...");
         ClearBandDataTask task = new ClearBandDataTask(this);
-        BluetoothModule.getInstance().sendOrder(task);
+        BluetoothModule.getInstance().sendDirectOrder(task);
     }
 
     public void setPhoneComingShake(String showText, boolean isPhoneNumber) {
         LogModule.i("设置来电震动...");
         PhoneComingShakeTask task = new PhoneComingShakeTask(this, showText, isPhoneNumber);
-        BluetoothModule.getInstance().sendOrder(task);
+        BluetoothModule.getInstance().sendDirectOrder(task);
     }
 
     public void setSmsComingShake(String showText, boolean isPhoneNumber) {
         LogModule.i("设置短信震动...");
         SmsComingShakeTask task = new SmsComingShakeTask(this, showText, isPhoneNumber);
-        BluetoothModule.getInstance().sendOrder(task);
+        BluetoothModule.getInstance().sendDirectOrder(task);
     }
 
 
