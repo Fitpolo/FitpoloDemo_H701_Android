@@ -31,6 +31,14 @@ public enum OrderEnum implements Serializable {
     setHeartRateInterval,
     // 设置功能显示
     setFunctionDisplay,
+    // 设置手环震动
+    setShakeBand,
+    // 清除手环数据
+    clearBandData,
+    // 设置来电震动
+    setPhoneComingShake,
+    // 设置短信震动
+    setSmsComingShake,
     // 获取固件版本号
     getFirmwareVersion,
     // 获取电量和记步总数

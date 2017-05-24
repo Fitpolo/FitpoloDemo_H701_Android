@@ -169,6 +169,7 @@ public class ComplexDataParse {
             HeartRate heartRate = new HeartRate();
             heartRate.time = heartRateTime;
             heartRate.value = heartRateValue;
+            LogModule.i(heartRate.toString());
             heartRates.add(heartRate);
         }
     }

@@ -32,13 +32,15 @@ public class FitConstant {
     public static final int GET_SET_FUNCTION_DISPLAY = 25;// 设置功能显示
     public static final int HEADER_SET_SYSTEM_TIME = 17;// 设置系统时间
     public static final int HEADER_SET_USERINFO = 18;// 设置个人信息
+    public static final int HEADER_CLEAR_BAND_DATA = 21;// 清除数据
+    public static final int HEADER_SET_SHAKE_BAND = 23;// 设置手环震动
     public static final int HEADER_SET_BANDALARM = 38;// 设置手环闹钟
     public static final int HEADER_SET_UNIT_TYPE = 35;// 单位制式
     public static final int HEADER_SET_TIME_FORMAT = 36;// 时间格式
     public static final int HEADER_SET_AUTO_LIGHTEN = 37;// 自动亮屏幕
     public static final int HEADER_SET_SIT_LONG_TIME_ALERT = 42;// 久坐提醒
     public static final int HEADER_SET_LAST_SHOW = 39;// 上次显示
-    public static final int RESPONSE_HEADER_STEP = 39;// 返回记步数据头
+    public static final int RESPONSE_HEADER_STEP = 146;// 返回记步数据头
     public static final int RESPONSE_HEADER_SLEEP_INDEX = 147;// 返回睡眠index数据头
     public static final int RESPONSE_HEADER_SLEEP_RECORD = 148;// 返回睡眠record数据头
     public static final int RESPONSE_HEADER_HEART_RATE = 168;// 返回心率数据头

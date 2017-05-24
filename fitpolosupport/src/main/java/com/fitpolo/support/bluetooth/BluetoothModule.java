@@ -52,6 +52,7 @@ public class BluetoothModule {
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothGattCharacteristic mNotifyCharacteristic;
     private BluetoothGatt mBluetoothGatt;
+    private BluetoothGattCallback mGattCallback;
     private BlockingQueue<OrderTask> mQueue;
     private static final UUID SERVIE_UUID =
             UUID.fromString("0000ffc0-0000-1000-8000-00805f9b34fb");
@@ -138,8 +139,10 @@ public class BluetoothModule {
         }
         mDeviceAddress = address;
         BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
-        BluetoothGattCallback callback = getBluetoothGattCallback(context, connCallBack);
-        mBluetoothGatt = device.connectGatt(context, false, callback);
+        if (mGattCallback == null) {
+            mGattCallback = getBluetoothGattCallback(context, connCallBack);
+        }
+        mBluetoothGatt = device.connectGatt(context, false, mGattCallback);
     }
 
     /**
@@ -161,6 +164,15 @@ public class BluetoothModule {
                 mQueue.offer(task);
             }
         }
+    }
+
+    /**
+     * @Date 2017/5/11
+     * @Author wenzheng.liu
+     * @Description 发送命令（不需要等待回复）
+     */
+    public void sendDirectOrder(OrderTask orderTask) {
+        writeCharacteristicData(mBluetoothGatt, orderTask.assemble());
     }
 
 
@@ -248,8 +260,8 @@ public class BluetoothModule {
                             LogModule.i("获取心率数据超时");
                             break;
                         case getTodayData:
-                            // LogModule.i("获取当天数据超时");
-                            return;
+                            LogModule.i("获取当天数据超时");
+                            break;
                         case setBandAlarm:
                             LogModule.i("设置闹钟数据超时");
                             break;
@@ -279,6 +291,9 @@ public class BluetoothModule {
                             break;
                         case setFunctionDisplay:
                             LogModule.i("设置功能显示超时");
+                            break;
+                        case setShakeBand:
+                            LogModule.i("设置手环震动超时");
                             break;
                     }
                     task.getCallback().onOrderTimeout(task.getOrder());
@@ -324,6 +339,7 @@ public class BluetoothModule {
      * @Description 设置重连
      */
     public void setOpenReConnect(boolean openReConnect) {
+        LogModule.i(openReConnect ? "打开重连" : "关闭重连");
         isOpenReConnect = openReConnect;
     }
 
@@ -372,6 +388,28 @@ public class BluetoothModule {
         return mHeartRates;
     }
 
+    /**
+     * @Date 2017/5/21 0021
+     * @Author wenzheng.liu
+     * @Description 获取验证码
+     */
+    public String getVerifyCode(byte[] scanRecord) {
+        String verifyCode;
+        int index = 0;
+        for (int i = 0; i < scanRecord.length; i++) {
+            if ("0A".equals(DigitalConver.byte2HexString(scanRecord[i]).trim())
+                    && "FF".equals(DigitalConver.byte2HexString(scanRecord[i + 1]).trim())) {
+                index = i + 6;
+                break;
+            }
+        }
+        if (index == 0) {
+            return "";
+        }
+        verifyCode = DigitalConver.byte2HexString(scanRecord[index]).trim() + DigitalConver.byte2HexString(scanRecord[index + 1]).trim();
+        return verifyCode;
+    }
+
     class FitLeScanCallback implements BluetoothAdapter.LeScanCallback {
         private ScanDeviceCallback mCallback;
 
@@ -400,7 +438,7 @@ public class BluetoothModule {
      * @Author wenzheng.liu
      * @Description 蓝牙是否开启
      */
-    private boolean isBluetoothOpen() {
+    public boolean isBluetoothOpen() {
         return mBluetoothAdapter != null && mBluetoothAdapter.isEnabled();
     }
 
@@ -409,12 +447,14 @@ public class BluetoothModule {
      * @Author wenzheng.liu
      * @Description 断开gattt
      */
-    private void disConnectBle() {
+    public void disConnectBle() {
         if (mBluetoothGatt != null) {
+            LogModule.i("断开连接");
             synchronized (LOCK) {
                 mNotifyCharacteristic = null;
             }
             mBluetoothGatt.close();
+            mBluetoothGatt = null;
         }
     }
 
@@ -461,79 +501,83 @@ public class BluetoothModule {
                 if (formatDatas != null && formatDatas.length > 0 && task != null) {
                     switch (task.getOrder()) {
                         case getInnerVersion:
-                            LogModule.i("获取内部版本");
+                            LogModule.i("获取内部版本成功");
                             formatInnerTask(formatDatas, task);
                             break;
                         case getFirmwareVersion:
-                            LogModule.i("获取固件版本");
+                            LogModule.i("获取固件版本成功");
                             formatFirmwareTask(formatDatas, task);
                             break;
                         case getBatteryDailyStepCount:
-                            LogModule.i("获取电量和记步总数");
+                            LogModule.i("获取电量和记步总数成功");
                             formatBatteryDailyStepCountTask(formatDatas, task);
                             break;
                         case getSleepHeartCount:
-                            LogModule.i("获取睡眠和心率总数");
+                            LogModule.i("获取睡眠和心率总数成功");
                             formatSleepHeartCountTask(formatDatas, task);
                             break;
                         case getDailySteps:
-                            LogModule.i("获取记步数据");
+                            LogModule.i("获取记步数据成功");
                             formatDailyStepsTask(formatDatas, task);
                             break;
                         case getDailySleepIndex:
-                            LogModule.i("获取睡眠index");
+                            LogModule.i("获取睡眠index成功");
                             formatDailySleepIndexTask(formatDatas, task);
                             break;
                         case getDailySleepRecord:
-                            LogModule.i("获取睡眠record");
+                            LogModule.i("获取睡眠record成功");
                             formatDailySleepRecordTask(formatDatas, task);
                             break;
                         case getHeartRate:
-                            LogModule.i("获取心率数据");
+                            LogModule.i("获取心率数据成功");
                             formatHeartRateTask(formatDatas, task);
                             break;
                         case getTodayData:
-                            LogModule.i("获取当天数据");
+                            LogModule.i("获取当天数据成功");
                             formatTodayData(formatDatas, task);
                             break;
                         case setBandAlarm:
-                            LogModule.i("设置闹钟数据");
+                            LogModule.i("设置闹钟数据成功");
                             formatBandAlarmTask(task);
                             break;
                         case setAutoLigten:
-                            LogModule.i("设置翻腕自动亮屏");
+                            LogModule.i("设置翻腕自动亮屏成功");
                             formatCommonOrder(task);
                             break;
                         case setSystemTime:
-                            LogModule.i("设置手环时间");
+                            LogModule.i("设置手环时间成功");
                             formatCommonOrder(task);
                             break;
                         case setTimeFormat:
-                            LogModule.i("设置显示时间格式");
+                            LogModule.i("设置显示时间格式成功");
                             formatCommonOrder(task);
                             break;
                         case setUserInfo:
-                            LogModule.i("设置用户信息");
+                            LogModule.i("设置用户信息成功");
                             formatCommonOrder(task);
                             break;
                         case setUnitType:
-                            LogModule.i("设置单位类型");
+                            LogModule.i("设置单位类型成功");
                             formatCommonOrder(task);
                             break;
                         case setSitLongTimeAlert:
-                            LogModule.i("设置久坐提醒");
+                            LogModule.i("设置久坐提醒成功");
                             formatCommonOrder(task);
                             break;
                         case setLastShow:
-                            LogModule.i("设置最后显示");
+                            LogModule.i("设置最后显示成功");
                             formatCommonOrder(task);
                             break;
                         case setHeartRateInterval:
-                            LogModule.i("设置心率时间间隔");
+                            LogModule.i("设置心率时间间隔成功");
                             formatCommonOrder(task);
                             break;
                         case setFunctionDisplay:
-                            LogModule.i("设置功能显示");
+                            LogModule.i("设置功能显示成功");
+                            formatCommonOrder(task);
+                            break;
+                        case setShakeBand:
+                            LogModule.i("设置手环震动成功");
                             formatCommonOrder(task);
                             break;
                     }
@@ -686,6 +730,7 @@ public class BluetoothModule {
         } else {
             task.getCallback().onOrderResult(task.getOrder(), response);
             mQueue.poll();
+            executeOrder(task.getCallback());
         }
     }
 
@@ -782,11 +827,7 @@ public class BluetoothModule {
         if (formatDatas.length > 4) {
             isSupportTodayData = true;
             String rateShow = formatDatas[3].substring(formatDatas[3].length() - 1, formatDatas[3].length());
-            if (Integer.parseInt(rateShow) == 1) {
-                isSupportHeartRate = true;
-            } else {
-                isSupportHeartRate = false;
-            }
+            isSupportHeartRate = Integer.parseInt(rateShow) == 1;
         } else {
             isSupportTodayData = false;
         }
