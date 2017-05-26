@@ -183,6 +183,7 @@ public class BluetoothModule {
     private boolean isOpenReConnect;
     private boolean isSupportHeartRate;
     private boolean isSupportTodayData;
+    private boolean isSupportNewData;
     private String mFirmwareVersion;
     private int mBatteryQuantity;
     private int mDailyStepCount;
@@ -230,6 +231,13 @@ public class BluetoothModule {
                 break;
             case getHeartRate:
                 delayTime = mHeartRateCount == 0 ? delayTime : 3000 * mHeartRateCount;
+                break;
+            case getNewDailySteps:
+            case getNewDailySleepIndex:
+            case getNewDailySleepRecord:
+            case getNewHeartRate:
+            case getTodayData:
+                delayTime = 5000;
                 break;
         }
         mHandler.postDelayed(new Runnable() {
@@ -298,6 +306,18 @@ public class BluetoothModule {
                         case setShakeBand:
                             LogModule.i("设置手环震动超时");
                             break;
+                        case getNewDailySteps:
+                            LogModule.i("获取未同步的记步数据超时");
+                            break;
+                        case getNewDailySleepIndex:
+                            LogModule.i("获取未同步的睡眠记录数据超时");
+                            break;
+                        case getNewDailySleepRecord:
+                            LogModule.i("获取未同步的睡眠详情数据超时");
+                            break;
+                        case getNewHeartRate:
+                            LogModule.i("获取未同步的心率数据超时");
+                            break;
                     }
                     task.getCallback().onOrderTimeout(task.getOrder());
                     mQueue.poll();
@@ -334,6 +354,15 @@ public class BluetoothModule {
      */
     public boolean isSupportTodayData() {
         return isSupportTodayData;
+    }
+
+    /**
+     * @Date 2017/5/12
+     * @Author wenzheng.liu
+     * @Description 是否支持同步未同步的数据
+     */
+    public boolean isSupportNewData() {
+        return isSupportNewData;
     }
 
     /**
@@ -613,12 +642,12 @@ public class BluetoothModule {
         if (header == FitConstant.RESPONSE_HEADER_NEW_DATA_COUNT) {
             mHeartRateCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[2]));
             LogModule.i("有" + mHeartRateCount + "条心率数据");
+            if (mHeartRates == null) {
+                mHeartRates = new ArrayList<>();
+            }
         }
         if (header == FitConstant.RESPONSE_HEADER_HEART_RATE) {
             if (mHeartRateCount > 0) {
-                if (mHeartRates == null) {
-                    mHeartRates = new ArrayList<>();
-                }
                 if (formatDatas.length <= 2)
                     return;
                 ComplexDataParse.parseHeartRate(formatDatas, mHeartRates);
@@ -810,9 +839,9 @@ public class BluetoothModule {
             } else {
                 mHeartRates = new ArrayList<>();
             }
-            response.code = FitConstant.ORDER_CODE_SUCCESS;
             return;
         }
+        response.code = FitConstant.ORDER_CODE_SUCCESS;
         task.getCallback().onOrderResult(task.getOrder(), response);
         mQueue.poll();
         executeOrder(task.getCallback());
@@ -986,6 +1015,8 @@ public class BluetoothModule {
             isSupportTodayData = true;
             String rateShow = formatDatas[3].substring(formatDatas[3].length() - 1, formatDatas[3].length());
             isSupportHeartRate = Integer.parseInt(rateShow) == 1;
+            int endVersion = Integer.parseInt(formatDatas[4], 16);
+            isSupportNewData = endVersion > 20;
         } else {
             isSupportTodayData = false;
         }
