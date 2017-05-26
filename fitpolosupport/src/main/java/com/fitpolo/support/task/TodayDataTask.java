@@ -9,11 +9,11 @@ import com.fitpolo.support.entity.BaseResponse;
  * @Date 2017/5/11
  * @Author wenzheng.liu
  * @Description 获取今天的记步，睡眠，心率数据
- * @ClassPath com.fitpolo.support.task.DailyTodayDataTask
+ * @ClassPath com.fitpolo.support.task.TodayDataTask
  */
-public class DailyTodayDataTask extends OrderTask {
+public class TodayDataTask extends OrderTask {
 
-    public DailyTodayDataTask(OrderCallback callback) {
+    public TodayDataTask(OrderCallback callback) {
         setOrder(OrderEnum.getTodayData);
         setCallback(callback);
         setResponse(new BaseResponse());

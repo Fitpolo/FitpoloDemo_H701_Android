@@ -27,6 +27,8 @@ import com.fitpolo.support.entity.HeartRate;
 import com.fitpolo.support.log.LogModule;
 import com.fitpolo.support.task.BandAlarmTask;
 import com.fitpolo.support.task.DailySleepRecordTask;
+import com.fitpolo.support.task.NewDailySleepIndexTask;
+import com.fitpolo.support.task.NewDailySleepRecordTask;
 import com.fitpolo.support.task.OrderTask;
 import com.fitpolo.support.utils.BaseHandler;
 import com.fitpolo.support.utils.ComplexDataParse;
@@ -535,7 +537,23 @@ public class BluetoothModule {
                             break;
                         case getTodayData:
                             LogModule.i("获取当天数据成功");
-                            formatTodayData(formatDatas, task);
+                            formatTodayDataTask(formatDatas, task);
+                            break;
+                        case getNewDailySteps:
+                            LogModule.i("获取未同步的记步数据成功");
+                            formatNewDailyStepsTask(formatDatas, task);
+                            break;
+                        case getNewDailySleepIndex:
+                            LogModule.i("获取未同步的睡眠记录数据成功");
+                            formatNewDailySleepIndex(formatDatas, task);
+                            break;
+                        case getNewDailySleepRecord:
+                            LogModule.i("获取未同步的睡眠详情数据成功");
+                            formatNewDailySleepRecordTask(formatDatas, task);
+                            break;
+                        case getNewHeartRate:
+                            LogModule.i("获取未同步的心率数据成功");
+                            formatNewHeartRateTask(formatDatas, task);
                             break;
                         case setBandAlarm:
                             LogModule.i("设置闹钟数据成功");
@@ -589,7 +607,139 @@ public class BluetoothModule {
         return callback;
     }
 
-    private void formatTodayData(String[] formatDatas, OrderTask task) {
+    private void formatNewHeartRateTask(String[] formatDatas, OrderTask task) {
+        BaseResponse response = task.getResponse();
+        int header = Integer.parseInt(DigitalConver.decodeToString(formatDatas[0]));
+        if (header == FitConstant.RESPONSE_HEADER_NEW_DATA_COUNT) {
+            mHeartRateCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[2]));
+            LogModule.i("有" + mHeartRateCount + "条心率数据");
+        }
+        if (header == FitConstant.RESPONSE_HEADER_HEART_RATE) {
+            if (mHeartRateCount > 0) {
+                if (mHeartRates == null) {
+                    mHeartRates = new ArrayList<>();
+                }
+                if (formatDatas.length <= 2)
+                    return;
+                ComplexDataParse.parseHeartRate(formatDatas, mHeartRates);
+                mHeartRateCount--;
+                if (mHeartRateCount > 0) {
+                    LogModule.i("还有" + mHeartRateCount + "条心率数据未同步");
+                    return;
+                }
+            }
+        }
+        if (mHeartRateCount != 0) {
+            return;
+        }
+        Collections.sort(mHeartRates);
+        response.code = FitConstant.ORDER_CODE_SUCCESS;
+        task.getCallback().onOrderResult(task.getOrder(), response);
+        mQueue.poll();
+        executeOrder(task.getCallback());
+    }
+
+    private void formatNewDailySleepRecordTask(String[] formatDatas, OrderTask task) {
+        BaseResponse response = task.getResponse();
+        int header = Integer.parseInt(DigitalConver.decodeToString(formatDatas[0]));
+        if (header == FitConstant.RESPONSE_HEADER_NEW_DATA_COUNT) {
+            mSleepRecordCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[2]));
+            LogModule.i("有" + mSleepRecordCount + "条睡眠record");
+        }
+        if (header == FitConstant.RESPONSE_HEADER_SLEEP_INDEX) {
+            if (mSleepRecordCount > 0) {
+                // 处理record
+                ComplexDataParse.parseDailySleepRecord(formatDatas, mSleepsMap);
+                mSleepRecordCount--;
+                if (mSleepRecordCount > 0) {
+                    LogModule.i("还有" + mSleepRecordCount + "条睡眠record数据未同步");
+                    return;
+                }
+            }
+        }
+        if (mSleepRecordCount != 0) {
+            return;
+        }
+        response.code = FitConstant.ORDER_CODE_SUCCESS;
+        // 重新设置回index头，方便前端调用
+        task.setOrder(OrderEnum.getDailySleepIndex);
+        task.getCallback().onOrderResult(task.getOrder(), response);
+        mQueue.poll();
+        executeOrder(task.getCallback());
+    }
+
+    private void formatNewDailySleepIndex(String[] formatDatas, OrderTask task) {
+        BaseResponse response = task.getResponse();
+        int header = Integer.parseInt(DigitalConver.decodeToString(formatDatas[0]));
+        if (header == FitConstant.RESPONSE_HEADER_NEW_DATA_COUNT) {
+            mSleepIndexCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[2]));
+            LogModule.i("有" + mSleepIndexCount + "条睡眠index");
+            if (mDailySleeps != null) {
+                mDailySleeps.clear();
+            } else {
+                mDailySleeps = new ArrayList<>();
+            }
+            if (mSleepsMap != null) {
+                mSleepsMap.clear();
+            } else {
+                mSleepsMap = new HashMap<>();
+            }
+        }
+        if (header == FitConstant.RESPONSE_HEADER_SLEEP_INDEX) {
+            if (mSleepIndexCount > 0) {
+                mDailySleeps.add(ComplexDataParse.parseDailySleepIndex(formatDatas, mSleepsMap));
+                mSleepIndexCount--;
+                if (mSleepIndexCount > 0) {
+                    LogModule.i("还有" + mSleepIndexCount + "条睡眠index数据未同步");
+                    return;
+                }
+            }
+        }
+        response.code = FitConstant.ORDER_CODE_SUCCESS;
+        if (mSleepIndexCount > 0) {
+            // 请求完index后请求record
+            NewDailySleepRecordTask newDailySleepRecordTask = new NewDailySleepRecordTask(task.getCallback(), ((NewDailySleepIndexTask) task).lastSyncTime);
+            writeCharacteristicData(mBluetoothGatt, newDailySleepRecordTask.assemble());
+            orderTimeoutHandler(newDailySleepRecordTask);
+        } else {
+            task.getCallback().onOrderResult(task.getOrder(), response);
+            mQueue.poll();
+            executeOrder(task.getCallback());
+        }
+    }
+
+    private void formatNewDailyStepsTask(String[] formatDatas, OrderTask task) {
+        BaseResponse response = task.getResponse();
+        int header = Integer.parseInt(DigitalConver.decodeToString(formatDatas[0]));
+        if (header == FitConstant.RESPONSE_HEADER_NEW_DATA_COUNT) {
+            mDailyStepCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[2]));
+            LogModule.i("有" + mDailyStepCount + "条记步数据");
+            if (mDailySteps != null) {
+                mDailySteps.clear();
+            } else {
+                mDailySteps = new ArrayList<>();
+            }
+        }
+        if (header == FitConstant.RESPONSE_HEADER_STEP) {
+            if (mDailyStepCount > 0) {
+                mDailySteps.add(ComplexDataParse.parseDailyStep(formatDatas));
+                mDailyStepCount--;
+                if (mDailyStepCount > 0) {
+                    LogModule.i("还有" + mDailyStepCount + "条记步数据未同步");
+                    return;
+                }
+            }
+        }
+        if (mDailyStepCount != 0) {
+            return;
+        }
+        response.code = FitConstant.ORDER_CODE_SUCCESS;
+        task.getCallback().onOrderResult(task.getOrder(), response);
+        mQueue.poll();
+        executeOrder(task.getCallback());
+    }
+
+    private void formatTodayDataTask(String[] formatDatas, OrderTask task) {
         BaseResponse response = task.getResponse();
         int header = Integer.parseInt(DigitalConver.decodeToString(formatDatas[0]));
         if (header == FitConstant.RESPONSE_HEADER_STEP) {
@@ -637,6 +787,9 @@ public class BluetoothModule {
             mSleepIndexCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[2]));
             mSleepRecordCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[3]));
             mHeartRateCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[4]));
+            LogModule.i("有" + mSleepIndexCount + "条睡眠index");
+            LogModule.i("有" + mSleepRecordCount + "条睡眠record");
+            LogModule.i("有" + mHeartRateCount + "条心率数据");
             if (mDailySteps != null) {
                 mDailySteps.clear();
             } else {
@@ -760,6 +913,9 @@ public class BluetoothModule {
         mSleepIndexCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[2]));
         mSleepRecordCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[3]));
         mHeartRateCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[4]));
+        LogModule.i("有" + mSleepIndexCount + "条睡眠index");
+        LogModule.i("有" + mSleepRecordCount + "条睡眠record");
+        LogModule.i("有" + mHeartRateCount + "条心率数据");
         if (mDailySleeps != null) {
             mDailySleeps.clear();
         } else {
@@ -784,6 +940,7 @@ public class BluetoothModule {
         BaseResponse response = task.getResponse();
         response.code = FitConstant.ORDER_CODE_SUCCESS;
         mDailyStepCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[1]));
+        LogModule.i("有" + mDailyStepCount + "条记步数据");
         if (mDailySteps != null) {
             mDailySteps.clear();
         } else {

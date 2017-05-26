@@ -54,5 +54,13 @@ public enum OrderEnum implements Serializable {
     // 获取心率
     getHeartRate,
     // 获取今天的记步，睡眠，心率数据
-    getTodayData
+    getTodayData,
+    // 获取未同步的记步数据
+    getNewDailySteps,
+    // 获取未同步的睡眠记录数据
+    getNewDailySleepIndex,
+    // 获取未同步的睡眠详情数据
+    getNewDailySleepRecord,
+    // 获取未同步的心率数据
+    getNewHeartRate
 }

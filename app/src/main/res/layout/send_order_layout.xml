@@ -17,135 +17,183 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="getInnerVersion"
-                android:text="获取内部版本" />
+                android:tag="获取内部版本"
+                android:text="getInnerVersion" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="setSystemTime"
-                android:text="设置系统时间" />
+                android:tag="设置系统时间"
+                android:text="setSystemTime" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="setUserInfo"
-                android:text="设置个人数据" />
+                android:tag="设置个人数据"
+                android:text="setUserInfo" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="setBandAlarm"
-                android:text="设置闹钟数据" />
+                android:tag="设置闹钟数据"
+                android:text="setBandAlarm" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="setUnitType"
-                android:text="设置单位制式" />
+                android:tag="设置单位制式"
+                android:text="setUnitType" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="setTimeFormat"
-                android:text="设置显示时间格式" />
+                android:tag="设置显示时间格式"
+                android:text="setTimeFormat" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="setAutoLigten"
-                android:text="设置自动点亮屏幕" />
+                android:tag="设置自动点亮屏幕"
+                android:text="setAutoLigten" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="setSitLongTimeAlert"
-                android:text="设置久坐提醒" />
+                android:tag="设置久坐提醒"
+                android:text="setSitLongTimeAlert" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="setLastShow"
-                android:text="设置上次显示" />
+                android:tag="设置上次显示"
+                android:text="setLastShow" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="setHeartRateInterval"
-                android:text="设置心率监测间隔" />
+                android:tag="设置心率监测间隔"
+                android:text="setHeartRateInterval" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="setFunctionDisplay"
-                android:text="设置功能显示" />
+                android:tag="设置功能显示"
+                android:text="setFunctionDisplay" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="getFirmwareVersion"
-                android:text="获取固件版本号" />
+                android:tag="获取固件版本号"
+                android:text="getFirmwareVersion" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="getBatteryDailyStepCount"
-                android:text="获取电量和记步总数" />
+                android:tag="获取电量和记步总数"
+                android:text="getBatteryDailyStepCount" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="getSleepHeartCount"
-                android:text="获取睡眠和心率总数" />
+                android:tag="获取睡眠和心率总数"
+                android:text="getSleepHeartCount" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="getDailySteps"
-                android:text="获取记步数据" />
+                android:tag="获取记步数据"
+                android:text="getDailySteps" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="getDailySleeps"
-                android:text="获取睡眠数据" />
+                android:tag="获取睡眠数据"
+                android:text="getDailySleeps" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="getHeartRate"
-                android:text="获取心率" />
+                android:tag="获取心率"
+                android:text="getHeartRate" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="getTodayData"
-                android:text="获取今天的记步，睡眠，心率数据" />
+                android:tag="获取今天的记步，睡眠，心率数据"
+                android:text="getTodayData" />
+
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="setShakeBand"
-                android:text="设置手环震动" />
+                android:tag="设置手环震动"
+                android:text="setShakeBand" />
+
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="setPhoneComingShake"
-                android:text="设置来电震动" />
+                android:tag="设置来电震动"
+                android:text="setPhoneComingShake" />
+
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="setSmsComingShake"
-                android:text="设置短信震动" />
+                android:tag="设置短信震动"
+                android:text="setSmsComingShake" />
+
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="clearBandData"
-                android:text="清除手环数据" />
+                android:tag="清除手环数据"
+                android:text="clearBandData" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:onClick="sendMultiOrders"
-                android:text="发送多个命令" />
+                android:tag="发送多个命令"
+                android:text="sendMultiOrders" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="getNewDailySteps"
+                android:tag="获取最新的记步数据"
+                android:text="getNewDailySteps" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="getNewDailySleeps"
+                android:tag="获取最新的睡眠数据"
+                android:text="getNewDailySleeps" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="getNewHeartRate"
+                android:tag="获取最新的心率数据"
+                android:text="getNewHeartRate" />
         </LinearLayout>
     </ScrollView>
 

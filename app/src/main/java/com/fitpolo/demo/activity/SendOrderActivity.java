@@ -149,6 +149,27 @@ public class SendOrderActivity extends Activity {
                                     LogModule.i(heartRate.toString());
                                 }
                                 break;
+                            case getNewDailySteps:
+                                Toast.makeText(SendOrderActivity.this, "获取未同步的记步数据成功", Toast.LENGTH_SHORT).show();
+                                ArrayList<DailyStep> newDailySteps = BluetoothModule.getInstance().getDailySteps();
+                                for (DailyStep step : newDailySteps) {
+                                    LogModule.i(step.toString());
+                                }
+                                break;
+                            case getNewDailySleepIndex:
+                                Toast.makeText(SendOrderActivity.this, "获取未同步的睡眠数据成功", Toast.LENGTH_SHORT).show();
+                                ArrayList<DailySleep> newDailySleeps = BluetoothModule.getInstance().getDailySleeps();
+                                for (DailySleep sleep : newDailySleeps) {
+                                    LogModule.i(sleep.toString());
+                                }
+                                break;
+                            case getNewHeartRate:
+                                Toast.makeText(SendOrderActivity.this, "获取未同步的心率数据成功", Toast.LENGTH_SHORT).show();
+                                ArrayList<HeartRate> newHeartRates = BluetoothModule.getInstance().getHeartRates();
+                                for (HeartRate heartRate : newHeartRates) {
+                                    LogModule.i(heartRate.toString());
+                                }
+                                break;
                         }
                     }
                 }
@@ -284,5 +305,17 @@ public class SendOrderActivity extends Activity {
 
     public void clearBandData(View view) {
         mService.clearBandData();
+    }
+
+    public void getNewDailySteps(View view) {
+        mService.getNewDailySteps("2017-05-25 08:00");
+    }
+
+    public void getNewDailySleeps(View view) {
+        mService.getNewDailySleeps("2017-05-25 08:00");
+    }
+
+    public void getNewHeartRate(View view) {
+        mService.getNewHeartRate("2017-05-25 08:00");
     }
 }

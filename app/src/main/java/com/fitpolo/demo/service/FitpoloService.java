@@ -25,13 +25,15 @@ import com.fitpolo.support.task.BatteryDailyStepsCountTask;
 import com.fitpolo.support.task.ClearBandDataTask;
 import com.fitpolo.support.task.DailySleepIndexTask;
 import com.fitpolo.support.task.DailyStepsTask;
-import com.fitpolo.support.task.DailyTodayDataTask;
 import com.fitpolo.support.task.FirmwareVersionTask;
 import com.fitpolo.support.task.FunctionDisplayTask;
 import com.fitpolo.support.task.HeartRateIntervalTask;
 import com.fitpolo.support.task.HeartRateTask;
 import com.fitpolo.support.task.InnerVersionTask;
 import com.fitpolo.support.task.LastShowTask;
+import com.fitpolo.support.task.NewDailySleepIndexTask;
+import com.fitpolo.support.task.NewDailyStepsTask;
+import com.fitpolo.support.task.NewHeartRateTask;
 import com.fitpolo.support.task.PhoneComingShakeTask;
 import com.fitpolo.support.task.ShakeBandTask;
 import com.fitpolo.support.task.SitLongTimeAlertTask;
@@ -39,6 +41,7 @@ import com.fitpolo.support.task.SleepHeartCountTask;
 import com.fitpolo.support.task.SmsComingShakeTask;
 import com.fitpolo.support.task.SystemTimeTask;
 import com.fitpolo.support.task.TimeFormatTask;
+import com.fitpolo.support.task.TodayDataTask;
 import com.fitpolo.support.task.UnitTypeTask;
 import com.fitpolo.support.task.UserInfoTask;
 
@@ -247,7 +250,7 @@ public class FitpoloService extends Service implements ScanDeviceCallback, ConnS
 
     public void getTodayData() {
         LogModule.i("获取今天的记步，睡眠，心率数据...");
-        DailyTodayDataTask task = new DailyTodayDataTask(this);
+        TodayDataTask task = new TodayDataTask(this);
         BluetoothModule.getInstance().sendOrder(task);
     }
 
@@ -282,6 +285,24 @@ public class FitpoloService extends Service implements ScanDeviceCallback, ConnS
         LogModule.i("设置短信震动...");
         SmsComingShakeTask task = new SmsComingShakeTask(this, showText, isPhoneNumber);
         BluetoothModule.getInstance().sendDirectOrder(task);
+    }
+
+    public void getNewDailySteps(String lastSyncTime) {
+        LogModule.i("获取未同步的记步数据...");
+        NewDailyStepsTask task = new NewDailyStepsTask(this, lastSyncTime);
+        BluetoothModule.getInstance().sendOrder(task);
+    }
+
+    public void getNewDailySleeps(String lastSyncTime) {
+        LogModule.i("获取未同步的睡眠记录数据...");
+        NewDailySleepIndexTask task = new NewDailySleepIndexTask(this, lastSyncTime);
+        BluetoothModule.getInstance().sendOrder(task);
+    }
+
+    public void getNewHeartRate(String lastSyncTime) {
+        LogModule.i("获取未同步的心率数据...");
+        NewHeartRateTask task = new NewHeartRateTask(this, lastSyncTime);
+        BluetoothModule.getInstance().sendOrder(task);
     }
 
 
