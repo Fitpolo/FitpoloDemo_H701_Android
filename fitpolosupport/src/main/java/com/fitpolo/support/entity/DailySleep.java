@@ -1,5 +1,8 @@
 package com.fitpolo.support.entity;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * @Date 2017/5/15
  * @Author wenzheng.liu
@@ -13,7 +16,7 @@ public class DailySleep {
     public String deepDuration;// 深睡时长，单位min
     public String lightDuration;// 浅睡时长，单位min
     public String awakeDuration;// 清醒时长，单位min
-    public String[] records;// 睡眠记录
+    public List<String> records;// 睡眠记录
 
 
     @Override

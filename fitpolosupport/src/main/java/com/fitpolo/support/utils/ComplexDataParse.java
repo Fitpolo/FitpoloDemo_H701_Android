@@ -116,6 +116,7 @@ public class ComplexDataParse {
         dailySleep.deepDuration = deep;
         dailySleep.lightDuration = light;
         dailySleep.awakeDuration = awake;
+        dailySleep.records = new ArrayList<>();
         LogModule.i(dailySleep.toString());
         // 暂存睡眠数据，以index为key，以实例为value，方便更新record;
         sleepsMap.put(Integer.valueOf(DigitalConver.decodeToString(formatDatas[1])), dailySleep);
@@ -127,9 +128,8 @@ public class ComplexDataParse {
         if (dailySleep != null) {
             int len = Integer.valueOf(DigitalConver.decodeToString(formatDatas[3]));
             if (dailySleep.records == null) {
-                dailySleep.records = new String[]{};
+                dailySleep.records = new ArrayList<>();
             }
-            int sourceLen = dailySleep.records.length;
             for (int i = 0; i < len && 4 + i < formatDatas.length; i++) {
                 String hex = formatDatas[4 + i];
                 // 转换为二进制
@@ -137,8 +137,7 @@ public class ComplexDataParse {
                 for (int j = binary.length(); j > 0; ) {
                     j -= 2;
                     String status = binary.substring(j, j + 2);
-                    dailySleep.records[sourceLen] = status;
-                    sourceLen++;
+                    dailySleep.records.add(status);
                 }
             }
             LogModule.i(dailySleep.toString());
