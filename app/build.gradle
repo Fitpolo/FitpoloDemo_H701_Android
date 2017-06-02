@@ -21,6 +21,19 @@ android {
             minifyEnabled false
         }
     }
+    applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+            def outputFile = output.outputFile
+            if (outputFile != null && outputFile.name.endsWith('.apk')) {
+                //这里修改apk文件名
+                def fileName = "fitpoloDemo-${defaultConfig.versionName}.apk"
+                if (outputFile.name.contains('debug')) {
+                    fileName = "fitpoloDemo-${defaultConfig.versionName}-debug.apk"
+                }
+                output.outputFile = new File(outputFile.parent, fileName)
+            }
+        }
+    }
 }
 
 dependencies {
