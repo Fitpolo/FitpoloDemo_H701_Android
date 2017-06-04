@@ -104,7 +104,7 @@ public class SendOrderActivity extends Activity {
                                 break;
                             case getFirmwareVersion:
                                 Toast.makeText(SendOrderActivity.this, "获取固件版本号成功", Toast.LENGTH_SHORT).show();
-                                LogModule.i("电池电量：" + BluetoothModule.getInstance().getFirmwareVersion());
+                                LogModule.i("固件版本：" + BluetoothModule.getInstance().getFirmwareVersion());
                                 break;
                             case getBatteryDailyStepCount:
                                 Toast.makeText(SendOrderActivity.this, "获取电量和记步总数成功", Toast.LENGTH_SHORT).show();
