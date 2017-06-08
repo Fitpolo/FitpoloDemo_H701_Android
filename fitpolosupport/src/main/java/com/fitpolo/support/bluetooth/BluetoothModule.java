@@ -304,6 +304,9 @@ public class BluetoothModule {
                             break;
                         case getNewDailySleepIndex:
                             LogModule.i("获取未同步的睡眠记录数据超时");
+                            if (mSleepsMap != null) {
+                                mSleepsMap.clear();
+                            }
                             break;
                         case getNewHeartRate:
                             LogModule.i("获取未同步的心率数据超时");
@@ -568,7 +571,7 @@ public class BluetoothModule {
                             formatNewDailyStepsTask(formatDatas, task);
                             break;
                         case getNewDailySleepIndex:
-                            if (mSleepIndexCount == 0 && mDailySleeps != null && !mDailySleeps.isEmpty()) {
+                            if (mSleepIndexCount == 0 && mSleepsMap != null && !mSleepsMap.isEmpty()) {
                                 LogModule.i("获取未同步的睡眠详情数据成功");
                                 formatNewDailySleepRecordTask(formatDatas, task);
                             } else {
@@ -675,7 +678,7 @@ public class BluetoothModule {
             mSleepRecordCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[2]));
             LogModule.i("有" + mSleepRecordCount + "条睡眠record");
         }
-        if (header == FitConstant.RESPONSE_HEADER_SLEEP_INDEX) {
+        if (header == FitConstant.RESPONSE_HEADER_SLEEP_RECORD) {
             if (mSleepRecordCount > 0) {
                 // 处理record
                 ComplexDataParse.parseDailySleepRecord(formatDatas, mSleepsMap);
@@ -689,6 +692,7 @@ public class BluetoothModule {
         if (mSleepRecordCount != 0) {
             return;
         }
+        mSleepsMap.clear();
         response.code = FitConstant.ORDER_CODE_SUCCESS;
         // 重新设置回index头，方便前端调用
         task.setOrder(OrderEnum.getDailySleepIndex);
@@ -729,6 +733,9 @@ public class BluetoothModule {
             NewDailySleepRecordTask newDailySleepRecordTask = new NewDailySleepRecordTask(task.getCallback(), ((NewDailySleepIndexTask) task).lastSyncTime);
             writeCharacteristicData(mBluetoothGatt, newDailySleepRecordTask.assemble());
         } else {
+            if (mSleepIndexCount != 0) {
+                return;
+            }
             response.code = FitConstant.ORDER_CODE_SUCCESS;
             task.getCallback().onOrderResult(task.getOrder(), response);
             mQueue.poll();
@@ -928,6 +935,7 @@ public class BluetoothModule {
                 return;
             }
         }
+        mSleepsMap.clear();
         response.code = FitConstant.ORDER_CODE_SUCCESS;
         // 重新设置回index头，方便前端调用
         task.setOrder(OrderEnum.getDailySleepIndex);
