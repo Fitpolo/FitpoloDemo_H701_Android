@@ -30,7 +30,7 @@ public class UserInfoTask extends OrderTask {
         }
         byte[] byteArray = new byte[6];
         int weight = userInfo != null && userInfo.weight > 30 ? userInfo.weight : 30;
-        int height = userInfo != null && userInfo.height > 100 ? userInfo.weight : 100;
+        int height = userInfo != null && userInfo.height > 100 ? userInfo.height : 100;
         int age = userInfo != null && userInfo.age > 5 ? userInfo.age : 5;
         int gender = userInfo != null ? userInfo.gender : 0;
         int stride = 75;

@@ -62,4 +62,24 @@ public class DigitalConver {
         }
         return bString;
     }
+
+    /**
+     * @Date 2017/6/9
+     * @Author wenzheng.liu
+     * @Description 2进制转16进制
+     */
+    public static String binaryString2hexString(String bString) {
+        if (bString == null || bString.equals("") || bString.length() % 8 != 0)
+            return null;
+        StringBuffer tmp = new StringBuffer();
+        int iTmp = 0;
+        for (int i = 0; i < bString.length(); i += 4) {
+            iTmp = 0;
+            for (int j = 0; j < 4; j++) {
+                iTmp += Integer.parseInt(bString.substring(i + j, i + j + 1)) << (4 - j - 1);
+            }
+            tmp.append(Integer.toHexString(iTmp));
+        }
+        return tmp.toString();
+    }
 }

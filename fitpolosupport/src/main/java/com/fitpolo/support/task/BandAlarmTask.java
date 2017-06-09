@@ -6,6 +6,7 @@ import com.fitpolo.support.callback.OrderCallback;
 import com.fitpolo.support.entity.BaseResponse;
 import com.fitpolo.support.entity.req.BandAlarm;
 import com.fitpolo.support.log.LogModule;
+import com.fitpolo.support.utils.DigitalConver;
 
 import java.util.List;
 
@@ -41,7 +42,7 @@ public class BandAlarmTask extends OrderTask {
                         LogModule.i(alarm.toString());
                     }
                     byteArray[i * 4 + 2] = Byte.valueOf(Integer.toHexString(alarm.type), 16);
-                    byteArray[i * 4 + 3] = (byte) Integer.parseInt(binaryString2hexString(alarm.state), 16);
+                    byteArray[i * 4 + 3] = (byte) Integer.parseInt(DigitalConver.binaryString2hexString(alarm.state), 16);
                     byteArray[i * 4 + 4] = Byte.valueOf(Integer.toHexString(Integer.valueOf(alarm.time.split(":")[0])), 16);
                     byteArray[i * 4 + 5] = Byte.valueOf(Integer.toHexString(Integer.valueOf(alarm.time.split(":")[1])), 16);
                 } else {
@@ -62,7 +63,7 @@ public class BandAlarmTask extends OrderTask {
                         LogModule.i(alarm.toString());
                     }
                     byteArray[i * 4 + 2] = Byte.valueOf(Integer.toHexString(alarm.type), 16);
-                    byteArray[i * 4 + 3] = (byte) Integer.parseInt(binaryString2hexString(alarm.state), 16);
+                    byteArray[i * 4 + 3] = (byte) Integer.parseInt(DigitalConver.binaryString2hexString(alarm.state), 16);
                     byteArray[i * 4 + 4] = Byte.valueOf(Integer.toHexString(Integer.valueOf(alarm.time.split(":")[0])), 16);
                     byteArray[i * 4 + 5] = Byte.valueOf(Integer.toHexString(Integer.valueOf(alarm.time.split(":")[1])), 16);
                 } else {
@@ -74,21 +75,6 @@ public class BandAlarmTask extends OrderTask {
             }
         }
         return byteArray;
-    }
-
-    private String binaryString2hexString(String bString) {
-        if (bString == null || bString.equals("") || bString.length() % 8 != 0)
-            return null;
-        StringBuffer tmp = new StringBuffer();
-        int iTmp = 0;
-        for (int i = 0; i < bString.length(); i += 4) {
-            iTmp = 0;
-            for (int j = 0; j < 4; j++) {
-                iTmp += Integer.parseInt(bString.substring(i + j, i + j + 1)) << (4 - j - 1);
-            }
-            tmp.append(Integer.toHexString(iTmp));
-        }
-        return tmp.toString();
     }
 
     public boolean isAlarmFinish() {
