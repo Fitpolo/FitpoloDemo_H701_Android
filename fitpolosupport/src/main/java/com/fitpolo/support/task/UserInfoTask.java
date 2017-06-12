@@ -33,7 +33,8 @@ public class UserInfoTask extends OrderTask {
         int height = userInfo != null && userInfo.height > 100 ? userInfo.height : 100;
         int age = userInfo != null && userInfo.age > 5 ? userInfo.age : 5;
         int gender = userInfo != null ? userInfo.gender : 0;
-        int stride = 75;
+        int stride = (int) Math.floor(height * 0.45);
+        LogModule.i("步幅：" + stride);
         byteArray[0] = (byte) FitConstant.HEADER_SET_USERINFO;
         byteArray[1] = (byte) weight;
         byteArray[2] = (byte) height;
