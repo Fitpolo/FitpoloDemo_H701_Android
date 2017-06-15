@@ -31,9 +31,11 @@ import com.fitpolo.support.task.NewDailySleepIndexTask;
 import com.fitpolo.support.task.NewDailySleepRecordTask;
 import com.fitpolo.support.task.OrderTask;
 import com.fitpolo.support.utils.BaseHandler;
+import com.fitpolo.support.utils.BleConnectionCompat;
 import com.fitpolo.support.utils.ComplexDataParse;
 import com.fitpolo.support.utils.DigitalConver;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -126,7 +128,7 @@ public class BluetoothModule {
      * @Author wenzheng.liu
      * @Description 连接gatt
      */
-    public void createBluetoothGatt(Context context, String address, ConnStateCallback connCallBack) {
+    public void createBluetoothGatt(final Context context, String address, ConnStateCallback connCallBack) {
         if (TextUtils.isEmpty(address)) {
             connCallBack.onConnFailure(FitConstant.CONN_ERROR_CODE_ADDRESS_NULL);
             return;
@@ -140,12 +142,17 @@ public class BluetoothModule {
             return;
         }
         mDeviceAddress = address;
-        BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
+        final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
         if (mGattCallback == null) {
             mGattCallback = getBluetoothGattCallback(context, connCallBack);
         }
         disConnectBle();
-        mBluetoothGatt = device.connectGatt(context, false, mGattCallback);
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mBluetoothGatt = (new BleConnectionCompat(context)).connectGatt(device, false, mGattCallback);
+            }
+        });
     }
 
     /**
@@ -474,6 +481,9 @@ public class BluetoothModule {
      */
     public void disConnectBle() {
         if (mBluetoothGatt != null) {
+            if (refreshDeviceCache()) {
+                LogModule.i("清理GATT层蓝牙缓存");
+            }
             LogModule.i("断开连接");
             synchronized (LOCK) {
                 mNotifyCharacteristic = null;
@@ -1191,5 +1201,23 @@ public class BluetoothModule {
         mBluetoothGatt.writeCharacteristic(characteristic);
     }
 
-
+    /**
+     * Clears the internal cache and forces a refresh of the services from the
+     * remote device.
+     */
+    public boolean refreshDeviceCache() {
+        if (mBluetoothGatt != null) {
+            try {
+                BluetoothGatt localBluetoothGatt = mBluetoothGatt;
+                Method localMethod = localBluetoothGatt.getClass().getMethod("refresh", new Class[0]);
+                if (localMethod != null) {
+                    boolean bool = ((Boolean) localMethod.invoke(localBluetoothGatt, new Object[0])).booleanValue();
+                    return bool;
+                }
+            } catch (Exception localException) {
+                LogModule.i("An exception occured while refreshing device");
+            }
+        }
+        return false;
+    }
 }

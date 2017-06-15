@@ -18,6 +18,7 @@
         </activity>
         <activity
             android:name=".activity.SendOrderActivity"
+            android:launchMode="singleTask"
             android:screenOrientation="portrait"></activity>
 
         <service android:name=".service.FitpoloService" />
