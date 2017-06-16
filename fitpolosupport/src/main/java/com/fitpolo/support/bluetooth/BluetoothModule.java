@@ -129,6 +129,10 @@ public class BluetoothModule {
      * @Description 连接gatt
      */
     public void createBluetoothGatt(final Context context, String address, ConnStateCallback connCallBack) {
+        if (isReConnecting) {
+            LogModule.i("正在重连中...");
+            return;
+        }
         if (TextUtils.isEmpty(address)) {
             connCallBack.onConnFailure(FitConstant.CONN_ERROR_CODE_ADDRESS_NULL);
             return;
@@ -188,6 +192,7 @@ public class BluetoothModule {
 
     private String mDeviceAddress;
     private boolean isOpenReConnect;
+    private boolean isReConnecting;
     private boolean isSupportHeartRate;
     private boolean isSupportTodayData;
     private boolean isSupportNewData;
@@ -511,6 +516,7 @@ public class BluetoothModule {
             @Override
             public void onConnSuccess() {
                 mBluetoothGatt.discoverServices();
+                isReConnecting = false;
             }
 
             @Override
@@ -1069,13 +1075,13 @@ public class BluetoothModule {
     }
 
     private ExecutorService mExecutorService;
-    private ReConnRunnable mrunnableReconnect;
+    private ReConnRunnable mRunnableReconnect;
 
     private void startReConnect(Context context, ConnStateCallback connCallBack) {
         if (isOpenReConnect) {
             LogModule.i("开始重连...");
-            mrunnableReconnect = new ReConnRunnable(context, connCallBack);
-            mExecutorService.execute(mrunnableReconnect);
+            mRunnableReconnect = new ReConnRunnable(context, connCallBack);
+            mExecutorService.execute(mRunnableReconnect);
         }
     }
 
@@ -1094,11 +1100,48 @@ public class BluetoothModule {
                 if (!isConnDevice(mContext, mDeviceAddress)) {
                     LogModule.i("设备未连接，重连中...");
                     if (isBluetoothOpen()) {
-                        createBluetoothGatt(mContext, mDeviceAddress, mConnCallBack);
+                        isReConnecting = true;
+                        LogModule.i("重新扫描设备...");
+                        startScanDevice(new ScanDeviceCallback() {
+                            String deviceAddress = "";
+
+                            @Override
+                            public void onStartScan() {
+
+                            }
+
+                            @Override
+                            public void onScanDevice(BleDevice device) {
+                                if (mDeviceAddress.equals(device.address) && TextUtils.isEmpty(deviceAddress)) {
+                                    deviceAddress = device.address;
+                                    LogModule.i("扫描到设备，开始连接...");
+                                    final BluetoothDevice bluetoothDevice = mBluetoothAdapter.getRemoteDevice(deviceAddress);
+                                    if (mGattCallback == null) {
+                                        mGattCallback = getBluetoothGattCallback(mContext, mConnCallBack);
+                                    }
+                                    mHandler.post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            mBluetoothGatt = (new BleConnectionCompat(mContext)).connectGatt(bluetoothDevice, false, mGattCallback);
+                                        }
+                                    });
+                                }
+                            }
+
+                            @Override
+                            public void onStopScan() {
+                                if (TextUtils.isEmpty(deviceAddress)) {
+                                    LogModule.i("未扫描到设备...");
+                                    startReConnect(mContext, mConnCallBack);
+                                    return;
+                                }
+
+                            }
+                        });
                     } else {
                         LogModule.i("蓝牙未开启...");
                         Thread.sleep(30000);
-                        mExecutorService.execute(mrunnableReconnect);
+                        mExecutorService.execute(mRunnableReconnect);
                     }
                 } else {
                     LogModule.i("设备已连接...");
