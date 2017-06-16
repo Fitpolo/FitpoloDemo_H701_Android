@@ -1099,8 +1099,8 @@ public class BluetoothModule {
             try {
                 if (!isConnDevice(mContext, mDeviceAddress)) {
                     LogModule.i("设备未连接，重连中...");
+                    isReConnecting = true;
                     if (isBluetoothOpen()) {
-                        isReConnecting = true;
                         LogModule.i("重新扫描设备...");
                         startScanDevice(new ScanDeviceCallback() {
                             String deviceAddress = "";
@@ -1132,15 +1132,14 @@ public class BluetoothModule {
                             public void onStopScan() {
                                 if (TextUtils.isEmpty(deviceAddress)) {
                                     LogModule.i("未扫描到设备...");
-                                    startReConnect(mContext, mConnCallBack);
-                                    return;
+                                    mExecutorService.execute(mRunnableReconnect);
                                 }
 
                             }
                         });
                     } else {
                         LogModule.i("蓝牙未开启...");
-                        Thread.sleep(30000);
+                        Thread.sleep(5000);
                         mExecutorService.execute(mRunnableReconnect);
                     }
                 } else {
