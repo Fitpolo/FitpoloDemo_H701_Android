@@ -233,13 +233,13 @@ public class BluetoothModule {
         long delayTime = 3000;
         switch (task.getOrder()) {
             case getDailySteps:
-                delayTime = mDailyStepCount == 0 ? delayTime : 3000 * mDailyStepCount;
+                delayTime = mDailyStepCount == 0 ? delayTime : 3000 + 100 * mDailyStepCount;
                 break;
             case getDailySleepIndex:
-                delayTime = mSleepIndexCount == 0 ? delayTime : 3000 * (mSleepIndexCount + mSleepRecordCount);
+                delayTime = mSleepIndexCount == 0 ? delayTime : 3000 + 100 * (mSleepIndexCount + mSleepRecordCount);
                 break;
             case getHeartRate:
-                delayTime = mHeartRateCount == 0 ? delayTime : 3000 * mHeartRateCount;
+                delayTime = mHeartRateCount == 0 ? delayTime : 3000 + 100 * mHeartRateCount;
                 break;
             case getNewDailySteps:
             case getNewDailySleepIndex:
@@ -268,15 +268,23 @@ public class BluetoothModule {
                             break;
                         case getDailySteps:
                             LogModule.i("获取记步数据超时");
+                            if (mDailySteps != null && mDailySteps.size() > 0)
+                                Collections.sort(mDailySteps);
                             break;
                         case getDailySleepIndex:
                             LogModule.i("获取睡眠index超时");
                             break;
                         case getHeartRate:
                             LogModule.i("获取心率数据超时");
+                            if (mHeartRates != null && mHeartRates.size() > 0)
+                                Collections.sort(mHeartRates);
                             break;
                         case getTodayData:
                             LogModule.i("获取当天数据超时");
+                            if (mHeartRates != null && mHeartRates.size() > 0)
+                                Collections.sort(mHeartRates);
+                            if (mDailySteps != null && mDailySteps.size() > 0)
+                                Collections.sort(mDailySteps);
                             break;
                         case setBandAlarm:
                             LogModule.i("设置闹钟数据超时");
@@ -313,6 +321,8 @@ public class BluetoothModule {
                             break;
                         case getNewDailySteps:
                             LogModule.i("获取未同步的记步数据超时");
+                            if (mDailySteps != null && mDailySteps.size() > 0)
+                                Collections.sort(mDailySteps);
                             break;
                         case getNewDailySleepIndex:
                             LogModule.i("获取未同步的睡眠记录数据超时");
@@ -322,6 +332,8 @@ public class BluetoothModule {
                             break;
                         case getNewHeartRate:
                             LogModule.i("获取未同步的心率数据超时");
+                            if (mHeartRates != null && mHeartRates.size() > 0)
+                                Collections.sort(mHeartRates);
                             break;
                     }
                     task.getCallback().onOrderTimeout(task.getOrder());
@@ -341,6 +353,15 @@ public class BluetoothModule {
         BluetoothManager bluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
         int connState = bluetoothManager.getConnectionState(mBluetoothAdapter.getRemoteDevice(address), BluetoothProfile.GATT);
         return connState == BluetoothProfile.STATE_CONNECTED;
+    }
+
+    /**
+     * @Date 2017/6/22
+     * @Author wenzheng.liu
+     * @Description 正在同步
+     */
+    public boolean isSyncData() {
+        return mQueue != null && !mQueue.isEmpty();
     }
 
     /**
@@ -661,7 +682,9 @@ public class BluetoothModule {
         if (header == FitConstant.RESPONSE_HEADER_NEW_DATA_COUNT) {
             mHeartRateCount = Integer.parseInt(DigitalConver.decodeToString(formatDatas[2]));
             LogModule.i("有" + mHeartRateCount + "条心率数据");
-            if (mHeartRates == null) {
+            if (mHeartRates != null) {
+                mHeartRates.clear();
+            } else {
                 mHeartRates = new ArrayList<>();
             }
         }
@@ -1099,6 +1122,10 @@ public class BluetoothModule {
             try {
                 if (!isConnDevice(mContext, mDeviceAddress)) {
                     LogModule.i("设备未连接，重连中...");
+                    if (!isOpenReConnect) {
+                        isReConnecting = false;
+                        return;
+                    }
                     isReConnecting = true;
                     if (isBluetoothOpen()) {
                         LogModule.i("重新扫描设备...");
