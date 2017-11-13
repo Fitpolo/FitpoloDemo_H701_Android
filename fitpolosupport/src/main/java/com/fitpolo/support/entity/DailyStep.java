@@ -3,6 +3,7 @@ package com.fitpolo.support.entity;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 
 /**
  * @Date 2017/5/15
@@ -29,7 +30,7 @@ public class DailyStep implements Comparable<DailyStep> {
     }
 
     public Calendar strDate2Calendar(String strDate, String pattern) {
-        SimpleDateFormat sdf = new SimpleDateFormat(pattern);
+        SimpleDateFormat sdf = new SimpleDateFormat(pattern, Locale.US);
         try {
             Date date = sdf.parse(strDate);
             Calendar calendar = Calendar.getInstance();

@@ -3,6 +3,7 @@ package com.fitpolo.support.entity;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 
 /**
  * @Date 2017/5/16
@@ -27,7 +28,7 @@ public class HeartRate implements Comparable<HeartRate> {
     }
 
     public Calendar strDate2Calendar(String strDate, String pattern) {
-        SimpleDateFormat sdf = new SimpleDateFormat(pattern);
+        SimpleDateFormat sdf = new SimpleDateFormat(pattern, Locale.US);
         try {
             Date date = sdf.parse(strDate);
             Calendar calendar = Calendar.getInstance();

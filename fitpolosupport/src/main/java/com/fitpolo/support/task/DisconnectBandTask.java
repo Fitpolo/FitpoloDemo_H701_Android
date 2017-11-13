@@ -6,15 +6,15 @@ import com.fitpolo.support.callback.OrderCallback;
 import com.fitpolo.support.entity.BaseResponse;
 
 /**
- * @Date 2017/5/11
+ * @Date 2017/11/1
  * @Author wenzheng.liu
- * @Description 清除手环数据
- * @ClassPath com.fitpolo.support.task.ClearBandDataTask
+ * @Description 断开手环
+ * @ClassPath com.fitpolo.support.task.DisconnectBandTask
  */
-public class ClearBandDataTask extends OrderTask {
+public class DisconnectBandTask extends OrderTask {
 
-    public ClearBandDataTask(OrderCallback callback) {
-        setOrder(OrderEnum.clearBandData);
+    public DisconnectBandTask(OrderCallback callback) {
+        setOrder(OrderEnum.disconnectBand);
         setCallback(callback);
         setResponse(new BaseResponse());
     }
@@ -23,7 +23,7 @@ public class ClearBandDataTask extends OrderTask {
     public byte[] assemble(Object... objects) {
         byte[] byteArray = new byte[2];
         byteArray[0] = (byte) FitConstant.HEADER_CLEAR_BAND_DATA;
-        byteArray[1] = (byte) 12;
+        byteArray[1] = (byte) 22;
         return byteArray;
     }
 }

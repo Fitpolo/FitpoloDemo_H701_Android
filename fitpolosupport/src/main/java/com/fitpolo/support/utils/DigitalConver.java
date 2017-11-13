@@ -82,4 +82,38 @@ public class DigitalConver {
         }
         return tmp.toString();
     }
+
+    /**
+     * @Date 2017/8/15
+     * @Author wenzheng.liu
+     * @Description 将byte数组bRefArr转为一个整数, 字节数组的低位是整型的低字节位
+     */
+    public static int toInt(byte[] bRefArr) {
+        int iOutcome = 0;
+        byte bLoop;
+
+        for (int i = 0; i < bRefArr.length; i++) {
+            bLoop = bRefArr[i];
+            iOutcome += (bLoop & 0xFF) << (8 * i);
+        }
+        return iOutcome;
+    }
+
+    /**
+     * @Date 2017/8/14 0014
+     * @Author wenzheng.liu
+     * @Description 整数转换成byte数组
+     */
+    public static byte[] toByteArray(int iSource, int iArrayLen) {
+        byte[] bLocalArr = new byte[iArrayLen];
+        for (int i = 0; (i < 4) && (i < iArrayLen); i++) {
+            bLocalArr[i] = (byte) (iSource >> 8 * i & 0xFF);
+        }
+        // 数据反了,需要做个翻转
+        byte[] bytes = new byte[iArrayLen];
+        for (int i = 0; i < bLocalArr.length; i++) {
+            bytes[bLocalArr.length - 1 - i] = bLocalArr[i];
+        }
+        return bytes;
+    }
 }

@@ -24,7 +24,7 @@ public class ShakeBandTask extends OrderTask {
         byte[] byteArray = new byte[5];
         byteArray[0] = (byte) FitConstant.HEADER_SET_SHAKE_BAND;
         byteArray[1] = 0x02;
-        byteArray[2] = 0x02;
+        byteArray[2] = 0x03;
         byteArray[3] = 0x0A;
         byteArray[4] = 0x0A;
         return byteArray;

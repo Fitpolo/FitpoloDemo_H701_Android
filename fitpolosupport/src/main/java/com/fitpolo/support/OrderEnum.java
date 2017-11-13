@@ -35,6 +35,8 @@ public enum OrderEnum implements Serializable {
     setShakeBand,
     // 清除手环数据
     clearBandData,
+    // 断开手环
+    disconnectBand,
     // 设置来电震动
     setPhoneComingShake,
     // 设置短信震动
@@ -62,5 +64,7 @@ public enum OrderEnum implements Serializable {
     // 获取未同步的睡眠详情数据
     getNewDailySleepRecord,
     // 获取未同步的心率数据
-    getNewHeartRate
+    getNewHeartRate,
+    // 获取CRC校验结果
+    getCRCVerifyResult
 }

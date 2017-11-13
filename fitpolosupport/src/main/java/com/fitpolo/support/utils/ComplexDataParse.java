@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 
 /**
  * @Date 2017/5/15
@@ -27,7 +28,7 @@ public class ComplexDataParse {
         calendar.set(2000 + Integer.parseInt(DigitalConver.decodeToString(year)),
                 Integer.parseInt(DigitalConver.decodeToString(month)) - 1,
                 Integer.parseInt(DigitalConver.decodeToString(day)));
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
         Date date = calendar.getTime();
         // 步数
         String step3 = formatDatas[5];
@@ -49,6 +50,7 @@ public class ComplexDataParse {
 
         String count = DigitalConver.decodeToString(sb.toString());
         String duration = DigitalConver.decodeToString(duration1 + duration0);
+        Locale.setDefault(Locale.US);
         String distance = new DecimalFormat().format(Integer.parseInt(DigitalConver
                 .decodeToString(distance1 + distance0)) * 0.1);
         String calories = DigitalConver.decodeToString(calories1 + calories0);
@@ -64,7 +66,7 @@ public class ComplexDataParse {
     }
 
     public static DailySleep parseDailySleepIndex(String[] formatDatas, HashMap<Integer, DailySleep> sleepsMap) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
         Calendar calendar = Calendar.getInstance();
         // 起始时间
         String startYear = formatDatas[2];
@@ -106,7 +108,7 @@ public class ComplexDataParse {
         String awake = DigitalConver.decodeToString(awake1 + awake0);
 
         // 记录睡眠日期
-        String date = new SimpleDateFormat("yyy-MM-dd").format(endDate);
+        String date = new SimpleDateFormat("yyy-MM-dd", Locale.US).format(endDate);
 
         // 构造睡眠数据
         DailySleep dailySleep = new DailySleep();
@@ -145,7 +147,7 @@ public class ComplexDataParse {
     }
 
     public static void parseHeartRate(String[] formatDatas, ArrayList<HeartRate> heartRates) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
         Calendar calendar = Calendar.getInstance();
         for (int i = 0; i < 3; i++) {
             String year = formatDatas[i * 6 + 2];

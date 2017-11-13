@@ -27,4 +27,11 @@ public interface ConnStateCallback {
      * @Description 断开连接
      */
     void onDisconnect();
+
+    /**
+     * @Date 2017/8/29
+     * @Author wenzheng.liu
+     * @Description 重连超时
+     */
+    void onConnTimeout(int reConnCount);
 }
