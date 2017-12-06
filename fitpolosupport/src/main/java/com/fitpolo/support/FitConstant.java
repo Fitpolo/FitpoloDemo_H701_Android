@@ -31,6 +31,7 @@ public class FitConstant {
     public static final int GET_SET_HEART_RATE_INTERVAL = 23;// 设置心率间隔
     public static final int GET_HEART_RATE = 24;// 获取心率数据
     public static final int GET_SET_FUNCTION_DISPLAY = 25;// 设置功能显示
+    public static final int GET_FIRMWARE_PARAM = 34;// 获取硬件阐述
     public static final int HEADER_SET_SYSTEM_TIME = 17;// 设置系统时间
     public static final int HEADER_SET_USERINFO = 18;// 设置个人信息
     public static final int HEADER_CLEAR_BAND_DATA = 22;// 清除数据

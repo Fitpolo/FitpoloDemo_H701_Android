@@ -66,5 +66,7 @@ public enum OrderEnum implements Serializable {
     // 获取未同步的心率数据
     getNewHeartRate,
     // 获取CRC校验结果
-    getCRCVerifyResult
+    getCRCVerifyResult,
+    // 获取手环硬件参数
+    getFirmwareParam
 }

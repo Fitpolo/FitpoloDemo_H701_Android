@@ -36,6 +36,7 @@ import com.fitpolo.support.utils.BaseHandler;
 import com.fitpolo.support.utils.BleConnectionCompat;
 import com.fitpolo.support.utils.ComplexDataParse;
 import com.fitpolo.support.utils.DigitalConver;
+import com.fitpolo.support.utils.Utils;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -203,6 +204,8 @@ public class BluetoothModule {
     private boolean isShouldUpgrade;
     private String mFirmwareHeader;
     private String mFirmwareVersion;
+    private String mInnerVersion;
+    private String mLastChargeTime;
     private int mBatteryQuantity;
     private int mDailyStepCount;
     private int mSleepIndexCount;
@@ -329,6 +332,9 @@ public class BluetoothModule {
                             break;
                         case getFirmwareVersion:
                             LogModule.i("获取固件版本超时");
+                            break;
+                        case getFirmwareParam:
+                            LogModule.i("获取硬件参数超时");
                             break;
                         case getBatteryDailyStepCount:
                             LogModule.i("获取电量和记步总数超时");
@@ -527,12 +533,30 @@ public class BluetoothModule {
     }
 
     /**
+     * @Date 2017/11/22
+     * @Author wenzheng.liu
+     * @Description 获取内部版本号
+     */
+    public String getInnerVersion() {
+        return mInnerVersion;
+    }
+
+    /**
      * @Date 2017/5/15
      * @Author wenzheng.liu
      * @Description 获取电池电量
      */
     public int getBatteryQuantity() {
         return mBatteryQuantity;
+    }
+
+    /**
+     * @Date 2017/12/6 0006
+     * @Author wenzheng.liu
+     * @Description 获取最后充电时间
+     */
+    public String getLastChargeTime() {
+        return mLastChargeTime;
     }
 
     /**
@@ -700,6 +724,12 @@ public class BluetoothModule {
                             if ("90".equals(formatDatas[0])) {
                                 LogModule.i("获取固件版本成功");
                                 formatFirmwareTask(formatDatas, task);
+                            }
+                            break;
+                        case getFirmwareParam:
+                            if ("A5".equals(formatDatas[0])) {
+                                LogModule.i("获取硬件参数成功");
+                                formatFirmwareParamTask(formatDatas, task);
                             }
                             break;
                         case getBatteryDailyStepCount:
@@ -932,6 +962,13 @@ public class BluetoothModule {
         if (mHeartRateCount != 0) {
             return;
         }
+        // 对心率数据做判重处理，避免时间重复造成的数据问题
+        HashMap<String, HeartRate> removeRepeatMap = new HashMap<>();
+        for (HeartRate heartRate : mHeartRates) {
+            removeRepeatMap.put(heartRate.time, heartRate);
+        }
+        mHeartRates.clear();
+        mHeartRates.addAll(removeRepeatMap.values());
         Collections.sort(mHeartRates);
         response.code = FitConstant.ORDER_CODE_SUCCESS;
         mQueue.poll();
@@ -1288,6 +1325,27 @@ public class BluetoothModule {
         executeOrder(task.getCallback());
     }
 
+    private void formatFirmwareParamTask(String[] formatDatas, OrderTask task) {
+        BaseResponse response = task.getResponse();
+        response.code = FitConstant.ORDER_CODE_SUCCESS;
+        if (formatDatas.length > 14) {
+            LogModule.i("flash状态：" + formatDatas[2]);
+            LogModule.i("当前反光阈值：" + DigitalConver.decodeToString(formatDatas[3] + formatDatas[4]));
+            LogModule.i("当前反光值：" + DigitalConver.decodeToString(formatDatas[5] + formatDatas[6]));
+            mLastChargeTime = String.format("%s-%s-%s %s:%s", 2000 + Integer.parseInt(formatDatas[7], 16) + "",
+                    DigitalConver.decodeToString(formatDatas[8]),
+                    DigitalConver.decodeToString(formatDatas[9]),
+                    DigitalConver.decodeToString(formatDatas[10]),
+                    DigitalConver.decodeToString(formatDatas[11]));
+            LogModule.i("手环上一次充电时间：" + mLastChargeTime);
+            LogModule.i("生产批次年：" + (2000 + Integer.parseInt(formatDatas[12], 16)));
+            LogModule.i("生产批次周：" + DigitalConver.decodeToString(formatDatas[13]));
+        }
+        mQueue.poll();
+        task.getCallback().onOrderResult(task.getOrder(), response);
+        executeOrder(task.getCallback());
+    }
+
     private void formatBandAlarmTask(OrderTask task) {
         BandAlarmTask bandAlarmTask = (BandAlarmTask) task;
         BaseResponse response = bandAlarmTask.getResponse();
@@ -1313,13 +1371,22 @@ public class BluetoothModule {
             isSupportNewData = endVersion > 25;
             mFirmwareHeader = formatDatas[2];
             if (!TextUtils.isEmpty(mFirmwareHeader) && "EE".equals(formatDatas[2])) {
-                isShouldUpgrade = endVersion < 28;
+                isShouldUpgrade = endVersion < 30;
             } else {
-                isShouldUpgrade = endVersion < 28;
+                isShouldUpgrade = endVersion < 30;
             }
         } else {
             isSupportTodayData = false;
         }
+        // 打印内部版本
+        StringBuilder sb = new StringBuilder();
+        for (int i = 2; i < formatDatas.length; i++) {
+            sb.append(formatDatas[i]);
+            if (i < formatDatas.length - 1) {
+                sb.append(".");
+            }
+        }
+        mInnerVersion = sb.toString();
         mQueue.poll();
         task.getCallback().onOrderResult(task.getOrder(), response);
         executeOrder(task.getCallback());
@@ -1382,16 +1449,24 @@ public class BluetoothModule {
                     isReConnecting = true;
                     if (isBluetoothOpen()) {
                         LogModule.i("重新扫描设备...");
-                        if (reConnectCount > 0) {
-                            reConnectCount--;
-                            LogModule.i("重连次数：" + reConnectCount);
-                            if (reConnectCount == 2) {
-                                mConnCallBack.onConnTimeout(reConnectCount);
+                        // 如果app处于前台，且栈顶页面为首页、配对页面、升级页面，则提示失败，否则一直重连
+                        String topActivity = Utils.getTopActivity(mContext);
+                        if (!TextUtils.isEmpty(topActivity)
+                                && (topActivity.contains("MainActivity")
+                                || topActivity.contains("MatchDevicesActivity")
+                                || topActivity.contains("UpgradeBandActivity"))) {
+                            LogModule.i(topActivity + "为前台页面，重连限制次数！！！");
+                            if (reConnectCount > 0) {
+                                reConnectCount--;
+                                LogModule.i("重连次数：" + reConnectCount);
+                                if (reConnectCount == 2) {
+                                    mConnCallBack.onConnTimeout(reConnectCount);
+                                }
+                            } else {
+                                isReConnecting = false;
+                                mConnCallBack.onConnFailure(FitConstant.CONN_ERROR_CODE_FAILURE);
+                                return;
                             }
-                        } else {
-                            isReConnecting = false;
-                            mConnCallBack.onConnFailure(FitConstant.CONN_ERROR_CODE_FAILURE);
-                            return;
                         }
                         startScanDevice(new ScanDeviceCallback() {
                             String deviceAddress = "";
