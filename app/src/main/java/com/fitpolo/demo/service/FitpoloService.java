@@ -125,6 +125,11 @@ public class FitpoloService extends Service implements ScanDeviceCallback, ConnS
     }
 
     @Override
+    public void onConnTimeout(int reConnCount) {
+
+    }
+
+    @Override
     public void onOrderResult(OrderEnum order, BaseResponse response) {
         Intent intent = new Intent(new Intent(DemoConstant.ACTION_ORDER_RESULT));
         intent.putExtra("order", order);
@@ -248,6 +253,7 @@ public class FitpoloService extends Service implements ScanDeviceCallback, ConnS
         BluetoothModule.getInstance().sendOrder(task);
     }
 
+    @Deprecated
     public void getTodayData() {
         LogModule.i("获取今天的记步，睡眠，心率数据...");
         TodayDataTask task = new TodayDataTask(this);

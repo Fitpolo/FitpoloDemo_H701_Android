@@ -135,13 +135,6 @@
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:onClick="getTodayData"
-                android:tag="获取今天的记步，睡眠，心率数据"
-                android:text="getTodayData" />
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
                 android:onClick="setShakeBand"
                 android:tag="设置手环震动"
                 android:text="setShakeBand" />
@@ -194,6 +187,13 @@
                 android:onClick="getNewHeartRate"
                 android:tag="获取最新的心率数据"
                 android:text="getNewHeartRate" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="upgradeFirmware"
+                android:tag="升级固件"
+                android:text="upgradeFirmware" />
         </LinearLayout>
     </ScrollView>
 

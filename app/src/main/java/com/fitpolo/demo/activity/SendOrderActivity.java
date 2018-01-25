@@ -1,21 +1,27 @@
 package com.fitpolo.demo.activity;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.Toast;
 
 import com.fitpolo.demo.DemoConstant;
 import com.fitpolo.demo.R;
 import com.fitpolo.demo.service.FitpoloService;
+import com.fitpolo.demo.utils.FileUtils;
 import com.fitpolo.support.FitConstant;
 import com.fitpolo.support.OrderEnum;
 import com.fitpolo.support.bluetooth.BluetoothModule;
@@ -26,8 +32,10 @@ import com.fitpolo.support.entity.HeartRate;
 import com.fitpolo.support.entity.req.BandAlarm;
 import com.fitpolo.support.entity.req.SitLongTimeAlert;
 import com.fitpolo.support.entity.req.UserInfo;
+import com.fitpolo.support.handler.UpgradeHandler;
 import com.fitpolo.support.log.LogModule;
 
+import java.io.File;
 import java.util.ArrayList;
 
 /**
@@ -40,11 +48,13 @@ public class SendOrderActivity extends Activity {
     private static final String TAG = "SendOrderActivity";
     private FitpoloService mService;
     private LocalBroadcastManager mBroadcastManager;
+    private String deviceMacAddress;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.send_order_layout);
+        deviceMacAddress = getIntent().getStringExtra("deviceMacAddress");
         mBroadcastManager = LocalBroadcastManager.getInstance(this);
         IntentFilter filter = new IntentFilter();
         filter.addAction(DemoConstant.ACTION_ORDER_RESULT);
@@ -282,11 +292,6 @@ public class SendOrderActivity extends Activity {
         mService.getHeartRate();
     }
 
-    public void getTodayData(View view) {
-        mService.getTodayData();
-    }
-
-
     public void sendMultiOrders(View view) {
         mService.sendMultiOrders();
     }
@@ -317,5 +322,93 @@ public class SendOrderActivity extends Activity {
 
     public void getNewHeartRate(View view) {
         mService.getNewHeartRate("2017-05-25 08:00");
+    }
+
+    private static final int REQUEST_CODE_FILE = 2;
+
+    public void upgradeFirmware(View view) {
+        String firmwarePath = getNewFirmware(this);
+        if (TextUtils.isEmpty(firmwarePath)) {
+            return;
+        }
+        File file = new File(firmwarePath);
+        if (!file.exists()) {
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.setType("*/*");//设置类型，我这里是任意类型，任意后缀的可以这样写。
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            try {
+                startActivityForResult(Intent.createChooser(intent, "select file first!"), REQUEST_CODE_FILE);
+            } catch (ActivityNotFoundException ex) {
+                Toast.makeText(this, "install file manager app", Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
+        upgrade(firmwarePath);
+    }
+
+    private ProgressDialog mDialog;
+
+    private void upgrade(String firmwarePath) {
+        mDialog = ProgressDialog.show(this, null, "upgrade...", false, false);
+        UpgradeHandler upgradeHandler = new UpgradeHandler(this);
+        upgradeHandler.setFilePath(firmwarePath, deviceMacAddress, new UpgradeHandler.IUpgradeCallback() {
+            @Override
+            public void onUpgradeError(int errorCode) {
+                if (mDialog != null && mDialog.isShowing()) {
+                    mDialog.dismiss();
+                }
+                switch (errorCode) {
+                    case UpgradeHandler.EXCEPTION_FILEPATH_IS_NULL:
+                        Toast.makeText(SendOrderActivity.this, "file is not exist！", Toast.LENGTH_SHORT).show();
+                        break;
+                    case UpgradeHandler.EXCEPTION_DEVICE_MAC_ADDRESS_IS_NULL:
+                        Toast.makeText(SendOrderActivity.this, "mac address is null！", Toast.LENGTH_SHORT).show();
+                        break;
+                    case UpgradeHandler.EXCEPTION_UPGRADE_FAILURE:
+                        Toast.makeText(SendOrderActivity.this, "upgrade failed！", Toast.LENGTH_SHORT).show();
+                        break;
+                }
+            }
+
+            @Override
+            public void onProgress(int progress) {
+                if (mDialog != null && mDialog.isShowing()) {
+                    mDialog.setMessage("upgrade progress:" + progress + "%");
+                }
+            }
+
+            @Override
+            public void onUpgradeDone() {
+                if (mDialog != null && mDialog.isShowing()) {
+                    mDialog.dismiss();
+                }
+                Toast.makeText(SendOrderActivity.this, "upgrade success", Toast.LENGTH_SHORT).show();
+                SendOrderActivity.this.finish();
+            }
+        });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == RESULT_OK) {
+            switch (requestCode) {
+                case REQUEST_CODE_FILE:
+                    Uri uri = data.getData();
+                    String path = FileUtils.getPath(this, uri);
+                    upgrade(path);
+                    break;
+            }
+        }
+    }
+
+    private String getNewFirmware(Context context) {
+        String firmwarePath;
+        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            firmwarePath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "20180117-wodproof-V1_1_2.bin";
+        } else {
+            firmwarePath = context.getFilesDir().getAbsolutePath() + File.separator + "20180117-wodproof-V1_1_2.bin";
+        }
+        return firmwarePath;
     }
 }

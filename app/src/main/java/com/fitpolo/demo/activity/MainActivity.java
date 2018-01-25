@@ -50,6 +50,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
     private ProgressDialog mDialog;
     private FitpoloService mService;
     private static final int PERMISSION_REQUEST_CODE = 1;
+    private String deviceMacAddress;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -114,6 +115,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         BleDevice device = (BleDevice) parent.getItemAtPosition(position);
         mService.startConnDevice(device.address);
+        deviceMacAddress = device.address;
     }
 
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
@@ -134,7 +136,9 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
                 }
                 if (DemoConstant.ACTION_CONN_SUCCESS.equals(action)) {
                     Toast.makeText(MainActivity.this, "连接成功", Toast.LENGTH_SHORT).show();
-                    startActivity(new Intent(MainActivity.this, SendOrderActivity.class));
+                    Intent orderIntent = new Intent(MainActivity.this, SendOrderActivity.class);
+                    orderIntent.putExtra("deviceMacAddress", deviceMacAddress);
+                    startActivity(orderIntent);
                 }
                 if (DemoConstant.ACTION_CONN_FAILURE.equals(action)) {
                     Toast.makeText(MainActivity.this, "连接失败", Toast.LENGTH_SHORT).show();

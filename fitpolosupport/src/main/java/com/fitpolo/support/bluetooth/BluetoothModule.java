@@ -61,6 +61,7 @@ public class BluetoothModule {
     private BluetoothGatt mBluetoothGatt;
     private BlockingQueue<OrderTask> mQueue;
     private BluetoothGattCallback mGattCallback;
+    private ConnStateCallback mConnStateCallback;
     private static final UUID SERVIE_UUID =
             UUID.fromString("0000ffc0-0000-1000-8000-00805f9b34fb");
     private static final UUID CHARACTERISTIC_DESCRIPTOR_UUID =
@@ -149,9 +150,10 @@ public class BluetoothModule {
             return;
         }
         mDeviceAddress = address;
+        mConnStateCallback = connCallBack;
         final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
         if (mGattCallback == null) {
-            mGattCallback = getBluetoothGattCallback(context, connCallBack);
+            mGattCallback = getBluetoothGattCallback(context);
         }
         disConnectBle();
         reConnectCount = 4;
@@ -206,6 +208,7 @@ public class BluetoothModule {
     private String mFirmwareVersion;
     private String mInnerVersion;
     private String mLastChargeTime;
+    private String mProductBatch;
     private int mBatteryQuantity;
     private int mDailyStepCount;
     private int mSleepIndexCount;
@@ -487,6 +490,15 @@ public class BluetoothModule {
     }
 
     /**
+     * @Date 2017/12/7 0007
+     * @Author wenzheng.liu
+     * @Description 设置是否需要升级
+     */
+    public void setShouldUpgrade(boolean shouldUpgrade) {
+        isShouldUpgrade = shouldUpgrade;
+    }
+
+    /**
      * @Date 2017/9/7
      * @Author wenzheng.liu
      * @Description 获取固件版本头
@@ -557,6 +569,15 @@ public class BluetoothModule {
      */
     public String getLastChargeTime() {
         return mLastChargeTime;
+    }
+
+    /**
+     * @Date 2017/12/6 0006
+     * @Author wenzheng.liu
+     * @Description 获取生产批号
+     */
+    public String getProductBatch() {
+        return mProductBatch;
     }
 
     /**
@@ -661,17 +682,16 @@ public class BluetoothModule {
 
     /**
      * @param context
-     * @param connCallBack
      * @Date 2017/5/10
      * @Author wenzheng.liu
      * @Description 获取蓝牙连接回调
      */
-    private BluetoothGattCallback getBluetoothGattCallback(final Context context, final ConnStateCallback connCallBack) {
+    private BluetoothGattCallback getBluetoothGattCallback(final Context context) {
         BluetoothGattCallback callback = new CustomGattCallback(new GattCallback() {
             @Override
             public void onServicesDiscovered() {
                 setCharacteristicNotify(mBluetoothGatt);
-                connCallBack.onConnSuccess();
+                mConnStateCallback.onConnSuccess();
             }
 
             @Override
@@ -689,8 +709,8 @@ public class BluetoothModule {
                 if (!mQueue.isEmpty()) {
                     mQueue.clear();
                 }
-                connCallBack.onConnFailure(FitConstant.CONN_ERROR_CODE_FAILURE);
-                startReConnect(context, connCallBack);
+                mConnStateCallback.onConnFailure(FitConstant.CONN_ERROR_CODE_FAILURE);
+                startReConnect(context, mConnStateCallback);
             }
 
             @Override
@@ -702,8 +722,8 @@ public class BluetoothModule {
                 if (!mQueue.isEmpty()) {
                     mQueue.clear();
                 }
-                connCallBack.onDisconnect();
-                startReConnect(context, connCallBack);
+                mConnStateCallback.onDisconnect();
+                startReConnect(context, mConnStateCallback);
             }
 
             @Override
@@ -1338,8 +1358,11 @@ public class BluetoothModule {
                     DigitalConver.decodeToString(formatDatas[10]),
                     DigitalConver.decodeToString(formatDatas[11]));
             LogModule.i("手环上一次充电时间：" + mLastChargeTime);
-            LogModule.i("生产批次年：" + (2000 + Integer.parseInt(formatDatas[12], 16)));
-            LogModule.i("生产批次周：" + DigitalConver.decodeToString(formatDatas[13]));
+            String batchYear = String.valueOf(2000 + Integer.parseInt(formatDatas[12], 16));
+            String batchWeek = DigitalConver.decodeToString(formatDatas[13]);
+            LogModule.i("生产批次年：" + batchYear);
+            LogModule.i("生产批次周：" + batchWeek);
+            mProductBatch = String.format("%s.%s", batchYear, batchWeek);
         }
         mQueue.poll();
         task.getCallback().onOrderResult(task.getOrder(), response);
@@ -1449,24 +1472,17 @@ public class BluetoothModule {
                     isReConnecting = true;
                     if (isBluetoothOpen()) {
                         LogModule.i("重新扫描设备...");
-                        // 如果app处于前台，且栈顶页面为首页、配对页面、升级页面，则提示失败，否则一直重连
-                        String topActivity = Utils.getTopActivity(mContext);
-                        if (!TextUtils.isEmpty(topActivity)
-                                && (topActivity.contains("MainActivity")
-                                || topActivity.contains("MatchDevicesActivity")
-                                || topActivity.contains("UpgradeBandActivity"))) {
-                            LogModule.i(topActivity + "为前台页面，重连限制次数！！！");
-                            if (reConnectCount > 0) {
-                                reConnectCount--;
-                                LogModule.i("重连次数：" + reConnectCount);
-                                if (reConnectCount == 2) {
-                                    mConnCallBack.onConnTimeout(reConnectCount);
-                                }
-                            } else {
-                                isReConnecting = false;
-                                mConnCallBack.onConnFailure(FitConstant.CONN_ERROR_CODE_FAILURE);
-                                return;
+                        if (reConnectCount > 0) {
+                            reConnectCount--;
+                            LogModule.i("重连次数：" + reConnectCount);
+                            if (reConnectCount == 2) {
+                                mConnCallBack.onConnTimeout(reConnectCount);
                             }
+                        } else {
+                            LogModule.i("重连次数为0，提示连接失败，需要用户手动连接");
+                            isReConnecting = false;
+                            mConnCallBack.onConnFailure(FitConstant.CONN_ERROR_CODE_FAILURE);
+                            return;
                         }
                         startScanDevice(new ScanDeviceCallback() {
                             String deviceAddress = "";
@@ -1483,7 +1499,7 @@ public class BluetoothModule {
                                     LogModule.i("扫描到设备，开始连接...");
                                     final BluetoothDevice bluetoothDevice = mBluetoothAdapter.getRemoteDevice(deviceAddress);
                                     if (mGattCallback == null) {
-                                        mGattCallback = getBluetoothGattCallback(mContext, mConnCallBack);
+                                        mGattCallback = getBluetoothGattCallback(mContext);
                                     }
                                     mHandler.post(new Runnable() {
                                         @Override
