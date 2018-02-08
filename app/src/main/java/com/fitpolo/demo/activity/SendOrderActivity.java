@@ -366,6 +366,7 @@ public class SendOrderActivity extends Activity {
                         break;
                     case UpgradeHandler.EXCEPTION_UPGRADE_FAILURE:
                         Toast.makeText(SendOrderActivity.this, "upgrade failed！", Toast.LENGTH_SHORT).show();
+                        back();
                         break;
                 }
             }
@@ -386,6 +387,13 @@ public class SendOrderActivity extends Activity {
                 SendOrderActivity.this.finish();
             }
         });
+    }
+
+    private void back() {
+        if (BluetoothModule.getInstance().isConnDevice(this, deviceMacAddress)) {
+            BluetoothModule.getInstance().disConnectBle();
+        }
+        finish();
     }
 
     @Override

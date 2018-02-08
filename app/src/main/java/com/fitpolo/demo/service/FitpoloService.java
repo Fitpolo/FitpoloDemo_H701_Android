@@ -46,6 +46,7 @@ import com.fitpolo.support.task.UnitTypeTask;
 import com.fitpolo.support.task.UserInfoTask;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -104,6 +105,7 @@ public class FitpoloService extends Service implements ScanDeviceCallback, ConnS
     @Override
     public void onStopScan() {
         mDatas.addAll(mMap.values());
+        Collections.sort(mDatas);
         Intent intent = new Intent(DemoConstant.ACTION_STOP_SCAN);
         intent.putExtra("devices", mDatas);
         mBroadcastManager.sendBroadcast(intent);

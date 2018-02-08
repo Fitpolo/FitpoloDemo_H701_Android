@@ -105,6 +105,9 @@ public class UpgradeHandler implements ConnStateCallback, OrderCallback {
         if (isUpgradeDone) {
             return;
         }
+        if (BluetoothModule.getInstance().isBluetoothOpen() && BluetoothModule.getInstance().getReconnectCount() > 0) {
+            return;
+        }
         onUpgradeFailure();
     }
 

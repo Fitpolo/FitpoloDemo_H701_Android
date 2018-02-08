@@ -36,7 +36,6 @@ import com.fitpolo.support.utils.BaseHandler;
 import com.fitpolo.support.utils.BleConnectionCompat;
 import com.fitpolo.support.utils.ComplexDataParse;
 import com.fitpolo.support.utils.DigitalConver;
-import com.fitpolo.support.utils.Utils;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -639,7 +638,18 @@ public class BluetoothModule {
         @Override
         public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
             if (device != null) {
-                if (TextUtils.isEmpty(device.getName())) {
+                if (TextUtils.isEmpty(device.getName()) || scanRecord.length == 0) {
+                    return;
+                }
+                int index = 0;
+                for (int i = 0; i < scanRecord.length; i++) {
+                    if ("C0".equals(DigitalConver.byte2HexString(scanRecord[i]).trim())
+                            && "FF".equals(DigitalConver.byte2HexString(scanRecord[i + 1]).trim())) {
+                        index = i;
+                        break;
+                    }
+                }
+                if (index == 0) {
                     return;
                 }
                 BleDevice bleDevice = new BleDevice();

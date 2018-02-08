@@ -25,6 +25,7 @@ import com.fitpolo.demo.DemoConstant;
 import com.fitpolo.demo.R;
 import com.fitpolo.demo.adapter.DeviceAdapter;
 import com.fitpolo.demo.service.FitpoloService;
+import com.fitpolo.support.bluetooth.BluetoothModule;
 import com.fitpolo.support.entity.BleDevice;
 
 import java.util.ArrayList;
@@ -113,6 +114,8 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        mDialog.setMessage("Connect...");
+        mDialog.show();
         BleDevice device = (BleDevice) parent.getItemAtPosition(position);
         mService.startConnDevice(device.address);
         deviceMacAddress = device.address;
@@ -125,26 +128,43 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
             if (intent != null) {
                 String action = intent.getAction();
                 if (DemoConstant.ACTION_START_SCAN.equals(action)) {
-                    mDialog.setMessage("正在扫描设备...");
+                    mDialog.setMessage("Scanning...");
                     mDialog.show();
                 }
                 if (DemoConstant.ACTION_STOP_SCAN.equals(action)) {
-                    mDialog.dismiss();
+                    if (!MainActivity.this.isFinishing() && mDialog.isShowing()) {
+                        mDialog.dismiss();
+                    }
                     mDatas = (ArrayList<BleDevice>) intent.getSerializableExtra("devices");
                     mAdapter.setItems(mDatas);
                     mAdapter.notifyDataSetChanged();
                 }
                 if (DemoConstant.ACTION_CONN_SUCCESS.equals(action)) {
-                    Toast.makeText(MainActivity.this, "连接成功", Toast.LENGTH_SHORT).show();
+                    if (!MainActivity.this.isFinishing() && mDialog.isShowing()) {
+                        mDialog.dismiss();
+                    }
+                    Toast.makeText(MainActivity.this, "Connect success", Toast.LENGTH_SHORT).show();
                     Intent orderIntent = new Intent(MainActivity.this, SendOrderActivity.class);
                     orderIntent.putExtra("deviceMacAddress", deviceMacAddress);
                     startActivity(orderIntent);
                 }
                 if (DemoConstant.ACTION_CONN_FAILURE.equals(action)) {
-                    Toast.makeText(MainActivity.this, "连接失败", Toast.LENGTH_SHORT).show();
+                    if (BluetoothModule.getInstance().isBluetoothOpen() && BluetoothModule.getInstance().getReconnectCount() > 0) {
+                        return;
+                    }
+                    if (!MainActivity.this.isFinishing() && mDialog.isShowing()) {
+                        mDialog.dismiss();
+                    }
+                    Toast.makeText(MainActivity.this, "Connect failed", Toast.LENGTH_SHORT).show();
                 }
                 if (DemoConstant.ACTION_DISCONNECT.equals(action)) {
-                    Toast.makeText(MainActivity.this, "断开连接", Toast.LENGTH_SHORT).show();
+                    if (BluetoothModule.getInstance().isBluetoothOpen() && BluetoothModule.getInstance().getReconnectCount() > 0) {
+                        return;
+                    }
+                    if (!MainActivity.this.isFinishing() && mDialog.isShowing()) {
+                        mDialog.dismiss();
+                    }
+                    Toast.makeText(MainActivity.this, "Disconnected", Toast.LENGTH_SHORT).show();
                 }
             }
         }
