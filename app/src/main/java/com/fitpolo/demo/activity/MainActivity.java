@@ -25,6 +25,8 @@ import com.fitpolo.demo.DemoConstant;
 import com.fitpolo.demo.R;
 import com.fitpolo.demo.adapter.DeviceAdapter;
 import com.fitpolo.demo.service.FitpoloService;
+import com.fitpolo.demo.service.FitpoloNotificationCollectorMonitorService;
+import com.fitpolo.demo.utils.AppUtils;
 import com.fitpolo.support.bluetooth.BluetoothModule;
 import com.fitpolo.support.entity.BleDevice;
 
@@ -191,4 +193,18 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
             mService = null;
         }
     };
+
+    public void openNotification(View view) {
+        if (!AppUtils.isNotificationListenerEnabled(this)) {
+            AppUtils.openNotificationListenSettings(this);
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        if (AppUtils.isNotificationListenerEnabled(this)) {
+            startService(new Intent(this, FitpoloNotificationCollectorMonitorService.class));
+        }
+        super.onStart();
+    }
 }
