@@ -11,6 +11,7 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.os.Message;
+import android.os.ParcelUuid;
 import android.text.TextUtils;
 
 import com.fitpolo.support.FitConstant;
@@ -25,6 +26,7 @@ import com.fitpolo.support.entity.CRCVerifyResponse;
 import com.fitpolo.support.entity.DailySleep;
 import com.fitpolo.support.entity.DailyStep;
 import com.fitpolo.support.entity.HeartRate;
+import com.fitpolo.support.handler.MokoLeScanHandler;
 import com.fitpolo.support.log.LogModule;
 import com.fitpolo.support.task.BandAlarmTask;
 import com.fitpolo.support.task.CRCVerifyTask;
@@ -48,6 +50,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import no.nordicsemi.android.support.v18.scanner.BluetoothLeScannerCompat;
+import no.nordicsemi.android.support.v18.scanner.ScanFilter;
+import no.nordicsemi.android.support.v18.scanner.ScanSettings;
+
 /**
  * @Date 2017/5/10
  * @Author wenzheng.liu
@@ -61,20 +67,16 @@ public class BluetoothModule {
     private BlockingQueue<OrderTask> mQueue;
     private BluetoothGattCallback mGattCallback;
     private ConnStateCallback mConnStateCallback;
-    private static final UUID SERVIE_UUID =
-            UUID.fromString("0000ffc0-0000-1000-8000-00805f9b34fb");
-    private static final UUID CHARACTERISTIC_DESCRIPTOR_UUID =
-            UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
+    private static final UUID SERVICE_UUID = UUID.fromString("0000ffc0-0000-1000-8000-00805f9b34fb");
+    private static final UUID CHARACTERISTIC_DESCRIPTOR_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
     /**
      * Write, APP send command to wristbands using this characteristic
      */
-    private static final UUID CHARACTERISTIC_UUID_WRITE =
-            UUID.fromString("0000ffc1-0000-1000-8000-00805f9b34fb");
+    private static final UUID CHARACTERISTIC_UUID_WRITE = UUID.fromString("0000ffc1-0000-1000-8000-00805f9b34fb");
     /**
      * Notify, wristbands send data to APP using this characteristic
      */
-    private static final UUID CHARACTERISTIC_UUID_NOTIFY =
-            UUID.fromString("0000ffc2-0000-1000-8000-00805f9b34fb");
+    private static final UUID CHARACTERISTIC_UUID_NOTIFY = UUID.fromString("0000ffc2-0000-1000-8000-00805f9b34fb");
     private static final Object LOCK = new Object();
 
 
@@ -114,16 +116,31 @@ public class BluetoothModule {
      * @Description 扫描设备
      */
     public void startScanDevice(final ScanDeviceCallback callback) {
-        final FitLeScanCallback fitLeScanCallback = new FitLeScanCallback(callback);
-        mBluetoothAdapter.startLeScan(fitLeScanCallback);
+        final BluetoothLeScannerCompat scanner = BluetoothLeScannerCompat.getScanner();
+        ScanSettings settings = new ScanSettings.Builder()
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                .build();
+        List<ScanFilter> scanFilterList = new ArrayList<>();
+        ScanFilter.Builder builder = new ScanFilter.Builder();
+        builder.setServiceUuid(new ParcelUuid(SERVICE_UUID));
+        scanFilterList.add(builder.build());
+        final MokoLeScanHandler mokoLeScanHandler = new MokoLeScanHandler(callback);
+        scanner.startScan(scanFilterList, settings, mokoLeScanHandler);
         callback.onStartScan();
         mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                mBluetoothAdapter.stopLeScan(fitLeScanCallback);
-                callback.onStopScan();
+                stopScanDevice(mokoLeScanHandler, callback);
             }
         }, FitConstant.SCAN_PERIOD);
+    }
+
+    private void stopScanDevice(MokoLeScanHandler mokoLeScanHandler, ScanDeviceCallback mokoScanDeviceCallback) {
+        if (mokoLeScanHandler != null && mokoScanDeviceCallback != null) {
+            final BluetoothLeScannerCompat scanner = BluetoothLeScannerCompat.getScanner();
+            scanner.stopScan(mokoLeScanHandler);
+            mokoScanDeviceCallback.onStopScan();
+        }
     }
 
     /**
@@ -604,62 +621,6 @@ public class BluetoothModule {
      */
     public ArrayList<HeartRate> getHeartRates() {
         return mHeartRates;
-    }
-
-    /**
-     * @Date 2017/5/21 0021
-     * @Author wenzheng.liu
-     * @Description 获取验证码
-     */
-    public String getVerifyCode(byte[] scanRecord) {
-        String verifyCode;
-        int index = 0;
-        for (int i = 0; i < scanRecord.length; i++) {
-            if ("0A".equals(DigitalConver.byte2HexString(scanRecord[i]).trim())
-                    && "FF".equals(DigitalConver.byte2HexString(scanRecord[i + 1]).trim())) {
-                index = i + 6;
-                break;
-            }
-        }
-        if (index == 0) {
-            return "";
-        }
-        verifyCode = DigitalConver.byte2HexString(scanRecord[index]).trim() + DigitalConver.byte2HexString(scanRecord[index + 1]).trim();
-        return verifyCode;
-    }
-
-    class FitLeScanCallback implements BluetoothAdapter.LeScanCallback {
-        private ScanDeviceCallback mCallback;
-
-        public FitLeScanCallback(ScanDeviceCallback callback) {
-            this.mCallback = callback;
-        }
-
-        @Override
-        public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
-            if (device != null) {
-                if (TextUtils.isEmpty(device.getName()) || scanRecord.length == 0) {
-                    return;
-                }
-                int index = 0;
-                for (int i = 0; i < scanRecord.length; i++) {
-                    if ("C0".equals(DigitalConver.byte2HexString(scanRecord[i]).trim())
-                            && "FF".equals(DigitalConver.byte2HexString(scanRecord[i + 1]).trim())) {
-                        index = i;
-                        break;
-                    }
-                }
-                if (index == 0) {
-                    return;
-                }
-                BleDevice bleDevice = new BleDevice();
-                bleDevice.name = device.getName();
-                bleDevice.address = device.getAddress();
-                bleDevice.rssi = rssi;
-                bleDevice.scanRecord = scanRecord;
-                mCallback.onScanDevice(bleDevice);
-            }
-        }
     }
 
     /**
@@ -1620,7 +1581,7 @@ public class BluetoothModule {
         if (mBluetoothGatt == null) {
             return;
         }
-        BluetoothGattService service = mBluetoothGatt.getService(SERVIE_UUID);
+        BluetoothGattService service = mBluetoothGatt.getService(SERVICE_UUID);
         if (service == null) {
             return;
         }

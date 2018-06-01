@@ -1,6 +1,5 @@
 package com.fitpolo.demo.activity;
 
-import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
@@ -44,7 +43,7 @@ import java.util.ArrayList;
  * @Description
  */
 
-public class SendOrderActivity extends Activity {
+public class SendOrderActivity extends BaseActivity {
     private static final String TAG = "SendOrderActivity";
     private FitpoloService mService;
     private LocalBroadcastManager mBroadcastManager;

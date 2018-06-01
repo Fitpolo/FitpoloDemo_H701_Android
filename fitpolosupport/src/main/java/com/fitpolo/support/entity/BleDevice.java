@@ -14,6 +14,7 @@ public class BleDevice implements Serializable, Comparable<BleDevice> {
     public String address;
     public String name;
     public int rssi;
+    public String verifyCode;
     public byte[] scanRecord;
 
     @Override
