@@ -70,8 +70,11 @@ incoming parameters: Get four verifycode from the scanRecord in the scanned devi
 	public void createBluetoothGatt(Context context, String address, ConnStateCallback connCallBack) {}
 
 incoming parameters：
+
 1. context.
+
 2. Device MAC Address.
+
 3. `ConnStateCallback`.
 
 	@Description Front display connection callback
