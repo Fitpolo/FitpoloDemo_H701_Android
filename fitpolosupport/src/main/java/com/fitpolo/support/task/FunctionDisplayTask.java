@@ -1,9 +1,12 @@
 package com.fitpolo.support.task;
 
-import com.fitpolo.support.FitConstant;
-import com.fitpolo.support.OrderEnum;
-import com.fitpolo.support.callback.OrderCallback;
-import com.fitpolo.support.entity.BaseResponse;
+import com.fitpolo.support.MokoSupport;
+import com.fitpolo.support.callback.MokoOrderTaskCallback;
+import com.fitpolo.support.entity.CustomScreen;
+import com.fitpolo.support.entity.OrderEnum;
+import com.fitpolo.support.entity.OrderType;
+import com.fitpolo.support.log.LogModule;
+import com.fitpolo.support.utils.DigitalConver;
 
 /**
  * @Date 2017/5/11
@@ -12,33 +15,27 @@ import com.fitpolo.support.entity.BaseResponse;
  * @ClassPath com.fitpolo.support.task.FunctionDisplayTask
  */
 public class FunctionDisplayTask extends OrderTask {
-    private boolean[] functions;
-    // functions[0]：是否显示运动时长；
-    // functions[1]：是否显示运动消耗卡路里；
-    // functions[2]：是否显示运动运动距离；
-    // functions[3]：是否显示心率；
-    // functions[4]：是否显示步数；
+    private static final int ORDERDATA_LENGTH = 6;
+    // 获取数据
+    private static final int HEADER_GETDATA = 0x16;
+    // 设置功能显示
+    private static final int GET_SET_FUNCTION_DISPLAY = 0x19;
 
-    public FunctionDisplayTask(OrderCallback callback, boolean[] functions) {
-        setOrder(OrderEnum.setFunctionDisplay);
-        setCallback(callback);
-        setResponse(new BaseResponse());
-        this.functions = functions;
-    }
+    private byte[] orderData;
 
-    @Override
-    public byte[] assemble(Object... objects) {
-        byte[] byteArray = new byte[6];
-        byteArray[0] = (byte) FitConstant.HEADER_GETDATA;
-        byteArray[1] = (byte) FitConstant.GET_SET_FUNCTION_DISPLAY;
-        byteArray[2] = (byte) 255;
-        byteArray[3] = (byte) 255;
-        byteArray[4] = (byte) 255;
-        boolean duration = functions[0];
-        boolean calorie = functions[1];
-        boolean distance = functions[2];
-        boolean heartrate = functions[3];
-        boolean step = functions[4];
+    public FunctionDisplayTask(MokoOrderTaskCallback callback, CustomScreen functions) {
+        super(OrderType.WRITE, OrderEnum.setFunctionDisplay, callback, OrderTask.RESPONSE_TYPE_WRITE_NO_RESPONSE);
+        orderData = new byte[ORDERDATA_LENGTH];
+        orderData[0] = (byte) HEADER_GETDATA;
+        orderData[1] = (byte) GET_SET_FUNCTION_DISPLAY;
+        orderData[2] = (byte) 255;
+        orderData[3] = (byte) 255;
+        boolean duration = functions.duration;
+        boolean calorie = functions.calorie;
+        boolean distance = functions.distance;
+        boolean heartrate = functions.heartrate;
+        boolean step = functions.step;
+        orderData[4] = (byte) 255;
         StringBuilder sb = new StringBuilder("00");
         sb.append(duration ? "1" : "0");
         sb.append(calorie ? "1" : "0");
@@ -46,7 +43,24 @@ public class FunctionDisplayTask extends OrderTask {
         sb.append(heartrate ? "1" : "0");
         sb.append(step ? "1" : "0");
         sb.append("1");
-        byteArray[5] = (byte) Integer.parseInt(sb.toString(), 2);
-        return byteArray;
+        orderData[5] = (byte) Integer.parseInt(sb.toString(), 2);
+    }
+
+    @Override
+    public byte[] assemble() {
+        return orderData;
+    }
+
+    @Override
+    public void parseValue(byte[] value) {
+        if (order.getOrderHeader() != DigitalConver.byte2Int(value[1])) {
+            return;
+        }
+        LogModule.i(order.getOrderName() + "成功");
+        orderStatus = OrderTask.ORDER_STATUS_SUCCESS;
+
+        MokoSupport.getInstance().pollTask();
+        callback.onOrderResult(response);
+        MokoSupport.getInstance().executeTask(callback);
     }
 }

@@ -28,7 +28,7 @@ public class HeartRate implements Comparable<HeartRate> {
     }
 
     public Calendar strDate2Calendar(String strDate, String pattern) {
-        SimpleDateFormat sdf = new SimpleDateFormat(pattern, Locale.US);
+        SimpleDateFormat sdf = new SimpleDateFormat(pattern);
         try {
             Date date = sdf.parse(strDate);
             Calendar calendar = Calendar.getInstance();

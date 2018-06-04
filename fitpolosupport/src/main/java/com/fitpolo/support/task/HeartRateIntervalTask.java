@@ -1,9 +1,11 @@
 package com.fitpolo.support.task;
 
-import com.fitpolo.support.FitConstant;
-import com.fitpolo.support.OrderEnum;
-import com.fitpolo.support.callback.OrderCallback;
-import com.fitpolo.support.entity.BaseResponse;
+import com.fitpolo.support.MokoSupport;
+import com.fitpolo.support.callback.MokoOrderTaskCallback;
+import com.fitpolo.support.entity.OrderEnum;
+import com.fitpolo.support.entity.OrderType;
+import com.fitpolo.support.log.LogModule;
+import com.fitpolo.support.utils.DigitalConver;
 
 /**
  * @Date 2017/5/11
@@ -12,22 +14,39 @@ import com.fitpolo.support.entity.BaseResponse;
  * @ClassPath com.fitpolo.support.task.HeartRateIntervalTask
  */
 public class HeartRateIntervalTask extends OrderTask {
-    private int heartRateInterval;// 0：关闭；1：10分钟；2：20分钟；3：30分钟
+    private static final int ORDERDATA_LENGTH = 4;
+    // 获取数据
+    private static final int HEADER_GETDATA = 0x16;
+    // 设置心率间隔
+    private static final int GET_SET_HEART_RATE_INTERVAL = 0x17;
 
-    public HeartRateIntervalTask(OrderCallback callback, int heartRateInterval) {
-        setOrder(OrderEnum.setHeartRateInterval);
-        setCallback(callback);
-        setResponse(new BaseResponse());
-        this.heartRateInterval = heartRateInterval;
+    private byte[] orderData;
+
+    public HeartRateIntervalTask(MokoOrderTaskCallback callback, int heartRateInterval) {
+        super(OrderType.WRITE, OrderEnum.setHeartRateInterval, callback, OrderTask.RESPONSE_TYPE_WRITE_NO_RESPONSE);
+        int interval = heartRateInterval;
+        orderData = new byte[ORDERDATA_LENGTH];
+        orderData[0] = (byte) HEADER_GETDATA;
+        orderData[1] = (byte) GET_SET_HEART_RATE_INTERVAL;
+        orderData[2] = (byte) interval;
+        orderData[3] = 0;
     }
 
     @Override
-    public byte[] assemble(Object... objects) {
-        byte[] byteArray = new byte[4];
-        byteArray[0] = (byte) FitConstant.HEADER_GETDATA;
-        byteArray[1] = (byte) FitConstant.GET_SET_HEART_RATE_INTERVAL;
-        byteArray[2] = (byte) heartRateInterval;
-        byteArray[3] = 0;
-        return byteArray;
+    public byte[] assemble() {
+        return orderData;
+    }
+
+    @Override
+    public void parseValue(byte[] value) {
+        if (order.getOrderHeader() != DigitalConver.byte2Int(value[1])) {
+            return;
+        }
+        LogModule.i(order.getOrderName() + "成功");
+        orderStatus = OrderTask.ORDER_STATUS_SUCCESS;
+
+        MokoSupport.getInstance().pollTask();
+        callback.onOrderResult(response);
+        MokoSupport.getInstance().executeTask(callback);
     }
 }

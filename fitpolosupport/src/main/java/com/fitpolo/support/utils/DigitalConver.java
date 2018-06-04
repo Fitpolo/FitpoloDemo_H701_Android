@@ -1,7 +1,5 @@
 package com.fitpolo.support.utils;
 
-import com.fitpolo.support.log.LogModule;
-
 /**
  * @Date 2017/5/15
  * @Author wenzheng.liu
@@ -9,22 +7,6 @@ import com.fitpolo.support.log.LogModule;
  * @ClassPath com.fitpolo.support.utils.DigitalConver
  */
 public class DigitalConver {
-    /**
-     * @Date 2017/5/10
-     * @Author wenzheng.liu
-     * @Description 格式化数据
-     */
-    public static String[] formatData(byte[] data) {
-        if (data != null && data.length > 0) {
-            StringBuilder stringBuilder = new StringBuilder(data.length);
-            for (byte byteChar : data)
-                stringBuilder.append(byte2HexString(byteChar));
-            LogModule.i(stringBuilder.toString());
-            String[] datas = stringBuilder.toString().split(" ");
-            return datas;
-        }
-        return null;
-    }
 
     /**
      * @Date 2017/5/10
@@ -32,7 +14,23 @@ public class DigitalConver {
      * @Description byte转16进制
      */
     public static String byte2HexString(byte b) {
-        return String.format("%02X ", b);
+        return String.format("%02X", b);
+    }
+
+    public static String bytesToHexString(byte[] src) {
+        StringBuilder stringBuilder = new StringBuilder("");
+        if (src == null || src.length <= 0) {
+            return null;
+        }
+        for (int i = 0; i < src.length; i++) {
+            int v = src[i] & 0xFF;
+            String hv = Integer.toHexString(v);
+            if (hv.length() < 2) {
+                stringBuilder.append(0);
+            }
+            stringBuilder.append(hv);
+        }
+        return stringBuilder.toString();
     }
 
     /**
@@ -64,6 +62,15 @@ public class DigitalConver {
     }
 
     /**
+     * @Date 2017/5/16
+     * @Author wenzheng.liu
+     * @Description byte转2进制
+     */
+    public static String byte2binaryString(byte b) {
+        return hexString2binaryString(byte2HexString(b));
+    }
+
+    /**
      * @Date 2017/6/9
      * @Author wenzheng.liu
      * @Description 2进制转16进制
@@ -88,15 +95,16 @@ public class DigitalConver {
      * @Author wenzheng.liu
      * @Description 将byte数组bRefArr转为一个整数, 字节数组的低位是整型的低字节位
      */
-    public static int toInt(byte[] bRefArr) {
-        int iOutcome = 0;
-        byte bLoop;
+    public static int byteArr2Int(byte[] bRefArr) {
+        return Integer.parseInt(DigitalConver.bytesToHexString(bRefArr), 16);
+    }
 
-        for (int i = 0; i < bRefArr.length; i++) {
-            bLoop = bRefArr[i];
-            iOutcome += (bLoop & 0xFF) << (8 * i);
-        }
-        return iOutcome;
+    public static String byteArr2Str(byte[] bRefArr) {
+        return Integer.toString(byteArr2Int(bRefArr));
+    }
+
+    public static int byte2Int(byte b) {
+        return b & 0xFF;
     }
 
     /**
@@ -104,7 +112,7 @@ public class DigitalConver {
      * @Author wenzheng.liu
      * @Description 整数转换成byte数组
      */
-    public static byte[] toByteArray(int iSource, int iArrayLen) {
+    public static byte[] int2ByteArr(int iSource, int iArrayLen) {
         byte[] bLocalArr = new byte[iArrayLen];
         for (int i = 0; (i < 4) && (i < iArrayLen); i++) {
             bLocalArr[i] = (byte) (iSource >> 8 * i & 0xFF);
@@ -115,5 +123,49 @@ public class DigitalConver {
             bytes[bLocalArr.length - 1 - i] = bLocalArr[i];
         }
         return bytes;
+    }
+
+    // 字符串转换为16进制
+    public static String string2Hex(String s) {
+        String str = "";
+        for (int i = 0; i < s.length(); i++) {
+            int ch = (int) s.charAt(i);
+            String s4 = Integer.toHexString(ch);
+            str = str + s4;
+        }
+        return str;
+    }
+
+    // 16进制转换为字符串
+    public static String hex2String(String s) {
+        byte[] baKeyword = new byte[s.length() / 2];
+        for (int i = 0; i < baKeyword.length; i++) {
+            try {
+                baKeyword[i] = (byte) (0xff & Integer.parseInt(s.substring(i * 2, i * 2 + 2), 16));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            s = new String(baKeyword, "utf-8");//UTF-16le:Not
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
+        return s;
+    }
+
+    public static byte[] hex2bytes(String hex) {
+        if (hex.length() % 2 == 1) {
+            hex = "0" + hex;
+        }
+        byte[] data = new byte[hex.length() / 2];
+        for (int i = 0; i < data.length; i++) {
+            try {
+                data[i] = (byte) (0xff & Integer.parseInt(hex.substring(i * 2, i * 2 + 2), 16));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return data;
     }
 }

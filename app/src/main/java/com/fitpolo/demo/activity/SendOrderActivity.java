@@ -1,6 +1,7 @@
 package com.fitpolo.demo.activity;
 
 import android.app.ProgressDialog;
+import android.bluetooth.BluetoothAdapter;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -10,32 +11,34 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.IBinder;
-import android.support.v4.content.LocalBroadcastManager;
-import android.text.TextUtils;
+import android.view.KeyEvent;
 import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
-import com.fitpolo.demo.DemoConstant;
 import com.fitpolo.demo.R;
-import com.fitpolo.demo.service.FitpoloService;
+import com.fitpolo.demo.service.MokoService;
 import com.fitpolo.demo.utils.FileUtils;
-import com.fitpolo.support.FitConstant;
-import com.fitpolo.support.OrderEnum;
-import com.fitpolo.support.bluetooth.BluetoothModule;
-import com.fitpolo.support.entity.BaseResponse;
+import com.fitpolo.support.MokoConstants;
+import com.fitpolo.support.MokoSupport;
+import com.fitpolo.support.entity.AutoLighten;
+import com.fitpolo.support.entity.BandAlarm;
+import com.fitpolo.support.entity.CustomScreen;
 import com.fitpolo.support.entity.DailySleep;
 import com.fitpolo.support.entity.DailyStep;
 import com.fitpolo.support.entity.HeartRate;
-import com.fitpolo.support.entity.req.BandAlarm;
-import com.fitpolo.support.entity.req.SitLongTimeAlert;
-import com.fitpolo.support.entity.req.UserInfo;
+import com.fitpolo.support.entity.OrderEnum;
+import com.fitpolo.support.entity.OrderTaskResponse;
+import com.fitpolo.support.entity.SitAlert;
+import com.fitpolo.support.entity.UserInfo;
 import com.fitpolo.support.handler.UpgradeHandler;
 import com.fitpolo.support.log.LogModule;
 
-import java.io.File;
 import java.util.ArrayList;
+
+import butterknife.Bind;
+import butterknife.ButterKnife;
 
 /**
  * @Date 2017/5/11
@@ -45,22 +48,76 @@ import java.util.ArrayList;
 
 public class SendOrderActivity extends BaseActivity {
     private static final String TAG = "SendOrderActivity";
-    private FitpoloService mService;
-    private LocalBroadcastManager mBroadcastManager;
+    @Bind(R.id.btn_inner_version)
+    Button btnInnerVersion;
+    @Bind(R.id.btn_system_time)
+    Button btnSystemTime;
+    @Bind(R.id.btn_user_info)
+    Button btnUserInfo;
+    @Bind(R.id.btn_band_alarm)
+    Button btnBandAlarm;
+    @Bind(R.id.btn_unit_type)
+    Button btnUnitType;
+    @Bind(R.id.btn_time_format)
+    Button btnTimeFormat;
+    @Bind(R.id.btn_auto_lighten)
+    Button btnAutoLighten;
+    @Bind(R.id.btn_sit_alert)
+    Button btnSitAlert;
+    @Bind(R.id.btn_last_screen)
+    Button btnLastScreen;
+    @Bind(R.id.btn_multi_orders)
+    Button btnMultiOrders;
+    @Bind(R.id.btn_heart_rate_interval)
+    Button btnHeartRateInterval;
+    @Bind(R.id.btn_function_display)
+    Button btnFunctionDisplay;
+    @Bind(R.id.btn_firmware_version)
+    Button btnFirmwareVersion;
+    @Bind(R.id.btn_battery_step_count)
+    Button btnBatteryStepCount;
+    @Bind(R.id.btn_sleep_heart_rate_count)
+    Button btnSleepHeartRateCount;
+    @Bind(R.id.btn_all_steps)
+    Button btnAllSteps;
+    @Bind(R.id.btn_all_sleeps)
+    Button btnAllSleeps;
+    @Bind(R.id.btn_phone_notify)
+    Button btnPhoneNotify;
+    @Bind(R.id.btn_sms_notify)
+    Button btnSmsNotify;
+    @Bind(R.id.btn_shake_band)
+    Button btnShakeBand;
+    @Bind(R.id.btn_lastest_steps)
+    Button btnLastestSteps;
+    @Bind(R.id.btn_lastest_sleeps)
+    Button btnLastestSleeps;
+    @Bind(R.id.btn_lastest_heart_rate)
+    Button btnLastestHeartRate;
+    @Bind(R.id.btn_upgrade_firmware)
+    Button btnUpgradeFirmware;
+    @Bind(R.id.btn_all_heart_rate)
+    Button btnAllHeartRate;
+    @Bind(R.id.btn_read_all_alarms)
+    Button btnReadAllAlarms;
+    @Bind(R.id.btn_read_sit_alert)
+    Button btnReadSitAlert;
+    @Bind(R.id.btn_read_settings)
+    Button btnReadSettings;
+    @Bind(R.id.btn_notification)
+    Button btnNotification;
+    @Bind(R.id.btn_firmware_params)
+    Button btnFirmwareParams;
+    private MokoService mService;
     private String deviceMacAddress;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.send_order_layout);
+        ButterKnife.bind(this);
         deviceMacAddress = getIntent().getStringExtra("deviceMacAddress");
-        mBroadcastManager = LocalBroadcastManager.getInstance(this);
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(DemoConstant.ACTION_ORDER_RESULT);
-        filter.addAction(DemoConstant.ACTION_ORDER_TIMEOUT);
-        filter.addAction(DemoConstant.ACTION_ORDER_FINISH);
-        mBroadcastManager.registerReceiver(mReceiver, filter);
-        bindService(new Intent(this, FitpoloService.class), mServiceConnection, BIND_AUTO_CREATE);
+        bindService(new Intent(this, MokoService.class), mServiceConnection, BIND_AUTO_CREATE);
     }
 
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
@@ -69,124 +126,147 @@ public class SendOrderActivity extends BaseActivity {
         public void onReceive(Context context, Intent intent) {
             if (intent != null) {
                 String action = intent.getAction();
-                if (DemoConstant.ACTION_ORDER_RESULT.equals(action)) {
-                    OrderEnum orde = (OrderEnum) intent.getSerializableExtra("order");
-                    BaseResponse response = (BaseResponse) intent.getSerializableExtra("response");
-                    if (FitConstant.ORDER_CODE_SUCCESS == response.code) {
-                        switch (orde) {
-                            case getInnerVersion:
-                                Toast.makeText(SendOrderActivity.this, "获取内部版本号成功", Toast.LENGTH_SHORT).show();
-                                boolean isSupportTodayData = BluetoothModule.getInstance().isSupportTodayData();
-                                LogModule.i("是否支持同步当天数据：" + isSupportTodayData);
-                                boolean isSupportHeartRate = BluetoothModule.getInstance().isSupportHeartRate();
-                                LogModule.i("是否支持心率功能：" + isSupportHeartRate);
-                                break;
-                            case setSystemTime:
-                                Toast.makeText(SendOrderActivity.this, "设置手环时间成功", Toast.LENGTH_SHORT).show();
-                                break;
-                            case setUserInfo:
-                                Toast.makeText(SendOrderActivity.this, "设置用户信息成功", Toast.LENGTH_SHORT).show();
-                                break;
-                            case setBandAlarm:
-                                Toast.makeText(SendOrderActivity.this, "设置闹钟数据成功", Toast.LENGTH_SHORT).show();
-                                break;
-                            case setUnitType:
-                                Toast.makeText(SendOrderActivity.this, "设置单位制式成功", Toast.LENGTH_SHORT).show();
-                                break;
-                            case setTimeFormat:
-                                Toast.makeText(SendOrderActivity.this, "设置显示时间格式成功", Toast.LENGTH_SHORT).show();
-                                break;
-                            case setAutoLigten:
-                                Toast.makeText(SendOrderActivity.this, "设置自动点亮屏幕成功", Toast.LENGTH_SHORT).show();
-                                break;
-                            case setSitLongTimeAlert:
-                                Toast.makeText(SendOrderActivity.this, "设置久坐提醒成功", Toast.LENGTH_SHORT).show();
-                                break;
-                            case setLastShow:
-                                Toast.makeText(SendOrderActivity.this, "设置上次显示成功", Toast.LENGTH_SHORT).show();
-                                break;
-                            case setHeartRateInterval:
-                                Toast.makeText(SendOrderActivity.this, "设置心率监测间隔成功", Toast.LENGTH_SHORT).show();
-                                break;
-                            case setFunctionDisplay:
-                                Toast.makeText(SendOrderActivity.this, "设置功能显示成功", Toast.LENGTH_SHORT).show();
-                                break;
-                            case getFirmwareVersion:
-                                Toast.makeText(SendOrderActivity.this, "获取固件版本号成功", Toast.LENGTH_SHORT).show();
-                                LogModule.i("固件版本：" + BluetoothModule.getInstance().getFirmwareVersion());
-                                break;
-                            case getBatteryDailyStepCount:
-                                Toast.makeText(SendOrderActivity.this, "获取电量和记步总数成功", Toast.LENGTH_SHORT).show();
-                                LogModule.i("电池电量：" + BluetoothModule.getInstance().getBatteryQuantity());
-                                break;
-                            case getSleepHeartCount:
-                                Toast.makeText(SendOrderActivity.this, "获取睡眠和心率总数成功", Toast.LENGTH_SHORT).show();
-                                break;
-                            case getDailySteps:
-                                Toast.makeText(SendOrderActivity.this, "获取记步数据成功", Toast.LENGTH_SHORT).show();
-                                ArrayList<DailyStep> steps = BluetoothModule.getInstance().getDailySteps();
-                                for (DailyStep step : steps) {
-                                    LogModule.i(step.toString());
-                                }
-                                break;
-                            case getDailySleepIndex:
-                                Toast.makeText(SendOrderActivity.this, "获取睡眠数据成功", Toast.LENGTH_SHORT).show();
-                                ArrayList<DailySleep> sleeps = BluetoothModule.getInstance().getDailySleeps();
-                                for (DailySleep sleep : sleeps) {
-                                    LogModule.i(sleep.toString());
-                                }
-                                break;
-                            case getHeartRate:
-                                Toast.makeText(SendOrderActivity.this, "获取心率数据成功", Toast.LENGTH_SHORT).show();
-                                ArrayList<HeartRate> heartRates = BluetoothModule.getInstance().getHeartRates();
-                                for (HeartRate heartRate : heartRates) {
-                                    LogModule.i(heartRate.toString());
-                                }
-                                break;
-                            case getTodayData:
-                                Toast.makeText(SendOrderActivity.this, "获取当天数据成功", Toast.LENGTH_SHORT).show();
-                                ArrayList<DailyStep> todaySteps = BluetoothModule.getInstance().getDailySteps();
-                                for (DailyStep step : todaySteps) {
-                                    LogModule.i(step.toString());
-                                }
-                                ArrayList<DailySleep> todaySleeps = BluetoothModule.getInstance().getDailySleeps();
-                                for (DailySleep sleep : todaySleeps) {
-                                    LogModule.i(sleep.toString());
-                                }
-                                ArrayList<HeartRate> todayHeartRates = BluetoothModule.getInstance().getHeartRates();
-                                for (HeartRate heartRate : todayHeartRates) {
-                                    LogModule.i(heartRate.toString());
-                                }
-                                break;
-                            case getNewDailySteps:
-                                Toast.makeText(SendOrderActivity.this, "获取未同步的记步数据成功", Toast.LENGTH_SHORT).show();
-                                ArrayList<DailyStep> newDailySteps = BluetoothModule.getInstance().getDailySteps();
-                                for (DailyStep step : newDailySteps) {
-                                    LogModule.i(step.toString());
-                                }
-                                break;
-                            case getNewDailySleepIndex:
-                                Toast.makeText(SendOrderActivity.this, "获取未同步的睡眠数据成功", Toast.LENGTH_SHORT).show();
-                                ArrayList<DailySleep> newDailySleeps = BluetoothModule.getInstance().getDailySleeps();
-                                for (DailySleep sleep : newDailySleeps) {
-                                    LogModule.i(sleep.toString());
-                                }
-                                break;
-                            case getNewHeartRate:
-                                Toast.makeText(SendOrderActivity.this, "获取未同步的心率数据成功", Toast.LENGTH_SHORT).show();
-                                ArrayList<HeartRate> newHeartRates = BluetoothModule.getInstance().getHeartRates();
-                                for (HeartRate heartRate : newHeartRates) {
-                                    LogModule.i(heartRate.toString());
-                                }
-                                break;
-                        }
+                if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
+                    int blueState = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, 0);
+                    switch (blueState) {
+                        case BluetoothAdapter.STATE_TURNING_OFF:
+                        case BluetoothAdapter.STATE_OFF:
+                            SendOrderActivity.this.finish();
+                            break;
                     }
                 }
-                if (DemoConstant.ACTION_ORDER_TIMEOUT.equals(action)) {
+                if (MokoConstants.ACTION_CONN_STATUS_DISCONNECTED.equals(action)) {
+                    abortBroadcast();
+                    Toast.makeText(SendOrderActivity.this, "Connect failed", Toast.LENGTH_SHORT).show();
+                    SendOrderActivity.this.finish();
+                }
+                if (MokoConstants.ACTION_ORDER_RESULT.equals(action)) {
+                    OrderTaskResponse response = (OrderTaskResponse) intent.getSerializableExtra(MokoConstants.EXTRA_KEY_RESPONSE_ORDER_TASK);
+                    OrderEnum orderEnum = response.order;
+                    Toast.makeText(SendOrderActivity.this, "Success", Toast.LENGTH_SHORT).show();
+                    switch (orderEnum) {
+                        case getInnerVersion:
+
+                            btnAllHeartRate.setVisibility(MokoSupport.showHeartRate ? View.VISIBLE : View.GONE);
+                            btnHeartRateInterval.setVisibility(MokoSupport.showHeartRate ? View.VISIBLE : View.GONE);
+
+                            btnLastestSteps.setVisibility(MokoSupport.supportNewData ? View.VISIBLE : View.GONE);
+                            btnLastestSleeps.setVisibility(MokoSupport.supportNewData ? View.VISIBLE : View.GONE);
+                            btnLastestHeartRate.setVisibility(MokoSupport.showHeartRate && MokoSupport.supportNewData ? View.VISIBLE : View.GONE);
+
+                            btnFirmwareParams.setVisibility(MokoSupport.versionCodeLast >= 28 ? View.VISIBLE : View.GONE);
+
+                            btnReadAllAlarms.setVisibility(MokoSupport.supportNotifyAndRead ? View.VISIBLE : View.GONE);
+                            btnReadSettings.setVisibility(MokoSupport.supportNotifyAndRead ? View.VISIBLE : View.GONE);
+                            btnReadSitAlert.setVisibility(MokoSupport.supportNotifyAndRead ? View.VISIBLE : View.GONE);
+
+                            LogModule.i("Support heartRate：" + MokoSupport.showHeartRate);
+                            LogModule.i("Support newData：" + MokoSupport.supportNewData);
+                            LogModule.i("Support notify and read：" + MokoSupport.supportNotifyAndRead);
+                            LogModule.i("Version code：" + MokoSupport.versionCode);
+                            LogModule.i("Should upgrade：" + MokoSupport.canUpgrade);
+                            break;
+                        case setSystemTime:
+                            break;
+                        case setUserInfo:
+                            break;
+                        case setBandAlarm:
+                            break;
+                        case setUnitType:
+                            break;
+                        case setTimeFormat:
+                            break;
+                        case setAutoLigten:
+                            break;
+                        case setSitLongTimeAlert:
+                            break;
+                        case setLastScreen:
+                            break;
+                        case setHeartRateInterval:
+                            break;
+                        case setFunctionDisplay:
+                            break;
+                        case getFirmwareVersion:
+                            LogModule.i("firmware version：" + MokoSupport.versionCodeShow);
+                            break;
+                        case getBatteryDailyStepCount:
+                            LogModule.i("battery：" + MokoSupport.getInstance().getBatteryQuantity());
+                            break;
+                        case getSleepHeartCount:
+                            break;
+                        case getAllSteps:
+                            ArrayList<DailyStep> steps = MokoSupport.getInstance().getDailySteps();
+                            for (DailyStep step : steps) {
+                                LogModule.i(step.toString());
+                            }
+                            break;
+                        case getAllSleepIndex:
+                            ArrayList<DailySleep> sleeps = MokoSupport.getInstance().getDailySleeps();
+                            for (DailySleep sleep : sleeps) {
+                                LogModule.i(sleep.toString());
+                            }
+                            break;
+                        case getAllHeartRate:
+                            ArrayList<HeartRate> heartRates = MokoSupport.getInstance().getHeartRates();
+                            for (HeartRate heartRate : heartRates) {
+                                LogModule.i(heartRate.toString());
+                            }
+                            break;
+                        case getLastestSteps:
+                            ArrayList<DailyStep> lastestSteps = MokoSupport.getInstance().getDailySteps();
+                            for (DailyStep step : lastestSteps) {
+                                LogModule.i(step.toString());
+                            }
+                            break;
+                        case getLastestSleepIndex:
+                            ArrayList<DailySleep> lastestSleeps = MokoSupport.getInstance().getDailySleeps();
+                            for (DailySleep sleep : lastestSleeps) {
+                                LogModule.i(sleep.toString());
+                            }
+                            break;
+                        case getLastestHeartRate:
+                            ArrayList<HeartRate> lastestHeartRate = MokoSupport.getInstance().getHeartRates();
+                            for (HeartRate heartRate : lastestHeartRate) {
+                                LogModule.i(heartRate.toString());
+                            }
+                            break;
+                        case getFirmwareParam:
+                            LogModule.i("Last charge time：" + MokoSupport.getInstance().getLastChargeTime());
+                            LogModule.i("Product batch：" + MokoSupport.getInstance().getProductBatch());
+                            break;
+                        case READ_ALARMS:
+                            ArrayList<BandAlarm> bandAlarms = MokoSupport.getInstance().getAlarms();
+                            for (BandAlarm bandAlarm : bandAlarms) {
+                                LogModule.i(bandAlarm.toString());
+                            }
+                            break;
+                        case READ_SETTING:
+                            boolean unitType = MokoSupport.getInstance().getUnitTypeBritish();
+                            int timeFormat = MokoSupport.getInstance().getTimeFormat();
+                            CustomScreen customScreen = MokoSupport.getInstance().getCustomScreen();
+                            boolean lastScreen = MokoSupport.getInstance().getLastScreen();
+                            int interval = MokoSupport.getInstance().getHeartRateInterval();
+                            AutoLighten autoLighten = MokoSupport.getInstance().getAutoLighten();
+                            LogModule.i("Unit type:" + unitType);
+                            LogModule.i("Time format:" + timeFormat);
+                            LogModule.i("Function display:" + customScreen.toString());
+                            LogModule.i("Last screen:" + lastScreen);
+                            LogModule.i("HeartRate interval:" + interval);
+                            LogModule.i("Auto light:" + autoLighten.toString());
+
+                            break;
+                        case READ_SIT_ALERT:
+                            SitAlert sitAlert = MokoSupport.getInstance().getSitAlert();
+                            LogModule.i("Sit alert:" + sitAlert.toString());
+                            break;
+                    }
 
                 }
-                if (DemoConstant.ACTION_ORDER_FINISH.equals(action)) {
-                    LogModule.i("任务全部完成！");
+                if (MokoConstants.ACTION_ORDER_TIMEOUT.equals(action)) {
+                    Toast.makeText(SendOrderActivity.this, "Timeout", Toast.LENGTH_SHORT).show();
+                }
+                if (MokoConstants.ACTION_ORDER_FINISH.equals(action)) {
+                    LogModule.i("Finish");
                 }
             }
         }
@@ -195,7 +275,7 @@ public class SendOrderActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mBroadcastManager.unregisterReceiver(mReceiver);
+        unregisterReceiver(mReceiver);
         unbindService(mServiceConnection);
     }
 
@@ -203,12 +283,23 @@ public class SendOrderActivity extends BaseActivity {
 
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            mService = ((FitpoloService.LocalBinder) service).getService();
+            mService = ((MokoService.LocalBinder) service).getService();
+            // 注册广播接收器
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(MokoConstants.ACTION_CONN_STATUS_DISCONNECTED);
+            filter.addAction(MokoConstants.ACTION_DISCOVER_TIMEOUT);
+            filter.addAction(MokoConstants.ACTION_ORDER_RESULT);
+            filter.addAction(MokoConstants.ACTION_ORDER_TIMEOUT);
+            filter.addAction(MokoConstants.ACTION_ORDER_FINISH);
+            filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+            filter.setPriority(200);
+            registerReceiver(mReceiver, filter);
+            // first
+            mService.getInnerVersion();
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            mService = null;
         }
     };
 
@@ -227,15 +318,16 @@ public class SendOrderActivity extends BaseActivity {
         userInfo.gender = 0;
         userInfo.height = 170;
         userInfo.weight = 80;
+        userInfo.stepExtent = (int) Math.floor(userInfo.height * 0.45);
         mService.setUserInfo(userInfo);
     }
 
-    public void setBandAlarm(View view) {
-        mService.setBandAlarm(new ArrayList<BandAlarm>());
+    public void setAllAlarms(View view) {
+        mService.setAllAlarms(new ArrayList<BandAlarm>());
     }
 
     public void setUnitType(View view) {
-        mService.setUnitType(0);
+        mService.setUnitType(false);
     }
 
     public void setTimeFormat(View view) {
@@ -243,28 +335,32 @@ public class SendOrderActivity extends BaseActivity {
     }
 
     public void setAutoLigten(View view) {
-        mService.setAutoLigten(0);
+        AutoLighten autoLighten = new AutoLighten();
+        autoLighten.autoLighten = 0;
+        autoLighten.startTime = "08:00";
+        autoLighten.endTime = "23:00";
+        mService.setAutoLighten(autoLighten);
     }
 
-    public void setSitLongTimeAlert(View view) {
-        SitLongTimeAlert alert = new SitLongTimeAlert();
+    public void setSitAlert(View view) {
+        SitAlert alert = new SitAlert();
         alert.alertSwitch = 0;
         alert.startTime = "11:00";
         alert.endTime = "18:00";
-        mService.setSitLongTimeAlert(alert);
+        mService.setSitAlert(alert);
     }
 
-    public void setLastShow(View view) {
-        mService.setLastShow(1);
+    public void setLastScreen(View view) {
+        mService.setLastScreen(true);
     }
 
     public void setHeartRateInterval(View view) {
-        mService.setHeartRateInterval(3);
+        mService.syncHeartRateInterval(3);
     }
 
     public void setFunctionDisplay(View view) {
-        boolean[] functions = new boolean[]{true, true, true, true, true};
-        mService.setFunctionDisplay(functions);
+        CustomScreen customScreen = new CustomScreen(true, true, true, true, true);
+        mService.syncFunctionDisplay(customScreen);
     }
 
     public void getFirmwareVersion(View view) {
@@ -272,77 +368,86 @@ public class SendOrderActivity extends BaseActivity {
     }
 
     public void getBatteryDailyStepCount(View view) {
-        mService.getBatteryDailyStepCount();
+        mService.getgetBatteryDailyStepsCount();
     }
 
     public void getSleepHeartCount(View view) {
         mService.getSleepHeartCount();
     }
 
-    public void getDailySteps(View view) {
-        mService.getDailySteps();
+    public void getAllSteps(View view) {
+        mService.getAllSteps();
     }
 
-    public void getDailySleeps(View view) {
-        mService.getDailySleeps();
+    public void getAllSleeps(View view) {
+        mService.getAllSleeps();
     }
 
-    public void getHeartRate(View view) {
-        mService.getHeartRate();
+    public void getAllHeartRate(View view) {
+        mService.getAllHeartRate();
     }
 
     public void sendMultiOrders(View view) {
         mService.sendMultiOrders();
     }
 
-    public void setShakeBand(View view) {
-        mService.setShakeBand();
+    public void shakeBand(View view) {
+        mService.shakeBand();
     }
 
-    public void setPhoneComingShake(View view) {
-        mService.setPhoneComingShake("1234567", true);
+    public void setPhoneNotify(View view) {
+        mService.setPhoneNotify("1234567", true);
     }
 
-    public void setSmsComingShake(View view) {
-        mService.setSmsComingShake("abcdef", false);
+    public void setSmsNotify(View view) {
+        mService.setSmsNotify("abcdef", false);
     }
 
-    public void clearBandData(View view) {
-        mService.clearBandData();
+    public void getLastestSteps(View view) {
+        mService.getLastestSteps();
     }
 
-    public void getNewDailySteps(View view) {
-        mService.getNewDailySteps("2017-05-25 08:00");
+    public void getLastestSleeps(View view) {
+        mService.getLastestSleeps();
     }
 
-    public void getNewDailySleeps(View view) {
-        mService.getNewDailySleeps("2017-05-25 08:00");
+    public void getLastestHeartRate(View view) {
+        mService.getLastestHeartRate();
     }
 
-    public void getNewHeartRate(View view) {
-        mService.getNewHeartRate("2017-05-25 08:00");
+
+    public void getFirmwareParams(View view) {
+        mService.getFirmwareParams();
+    }
+
+
+    public void readAllAlarms(View view) {
+        mService.readAllAlarms();
+    }
+
+    public void readSitAlert(View view) {
+        mService.readSitAlert();
+    }
+
+    public void readSettings(View view) {
+        mService.readSettings();
+    }
+
+    public void notification(View view) {
+        // TODO: 2018/6/4 跳转打开通知页面
     }
 
     private static final int REQUEST_CODE_FILE = 2;
 
     public void upgradeFirmware(View view) {
-        String firmwarePath = getNewFirmware(this);
-        if (TextUtils.isEmpty(firmwarePath)) {
-            return;
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("*/*");//设置类型，我这里是任意类型，任意后缀的可以这样写。
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        try {
+            startActivityForResult(Intent.createChooser(intent, "select file first!"), REQUEST_CODE_FILE);
+        } catch (ActivityNotFoundException ex) {
+            Toast.makeText(this, "install file manager app", Toast.LENGTH_SHORT).show();
         }
-        File file = new File(firmwarePath);
-        if (!file.exists()) {
-            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-            intent.setType("*/*");//设置类型，我这里是任意类型，任意后缀的可以这样写。
-            intent.addCategory(Intent.CATEGORY_OPENABLE);
-            try {
-                startActivityForResult(Intent.createChooser(intent, "select file first!"), REQUEST_CODE_FILE);
-            } catch (ActivityNotFoundException ex) {
-                Toast.makeText(this, "install file manager app", Toast.LENGTH_SHORT).show();
-            }
-            return;
-        }
-        upgrade(firmwarePath);
     }
 
     private ProgressDialog mDialog;
@@ -389,8 +494,8 @@ public class SendOrderActivity extends BaseActivity {
     }
 
     private void back() {
-        if (BluetoothModule.getInstance().isConnDevice(this, deviceMacAddress)) {
-            BluetoothModule.getInstance().disConnectBle();
+        if (MokoSupport.getInstance().isConnDevice(this, deviceMacAddress)) {
+            MokoSupport.getInstance().disConnectBle();
         }
         finish();
     }
@@ -409,13 +514,12 @@ public class SendOrderActivity extends BaseActivity {
         }
     }
 
-    private String getNewFirmware(Context context) {
-        String firmwarePath;
-        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
-            firmwarePath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "20180117-wodproof-V1_1_2.bin";
-        } else {
-            firmwarePath = context.getFilesDir().getAbsolutePath() + File.separator + "20180117-wodproof-V1_1_2.bin";
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            back();
+            return false;
         }
-        return firmwarePath;
+        return super.onKeyDown(keyCode, event);
     }
 }

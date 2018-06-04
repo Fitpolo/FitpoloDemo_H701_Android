@@ -11,129 +11,151 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Locale;
 
 /**
- * @Date 2017/5/15
+ * @Date 2018/4/6
  * @Author wenzheng.liu
  * @Description 复杂数据解析类
- * @ClassPath com.fitpolo.support.DigitalConver.ComplexDataParse
+ * @ClassPath com.fitpolo.support.utils.ComplexDataParse
  */
 public class ComplexDataParse {
-    public static DailyStep parseDailyStep(String[] formatDatas) {
-        String year = formatDatas[2];
-        String month = formatDatas[3];
-        String day = formatDatas[4];
+    public static DailyStep parseDailyStep(byte[] value, int index) {
+        // 日期
         Calendar calendar = Calendar.getInstance();
-        calendar.set(2000 + Integer.parseInt(DigitalConver.decodeToString(year)),
-                Integer.parseInt(DigitalConver.decodeToString(month)) - 1,
-                Integer.parseInt(DigitalConver.decodeToString(day)));
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        calendar.set(2000 + DigitalConver.byte2Int(value[index]),
+                DigitalConver.byte2Int(value[index + 1]) - 1,
+                DigitalConver.byte2Int(value[index + 2]));
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         Date date = calendar.getTime();
-        // 步数
-        String step3 = formatDatas[5];
-        String step2 = formatDatas[6];
-        String step1 = formatDatas[7];
-        String step0 = formatDatas[8];
-        StringBuilder sb = new StringBuilder();
-        sb.append(step3).append(step2).append(step1).append(step0);
-        // 时长
-        String duration1 = formatDatas[9];
-        String duration0 = formatDatas[10];
-        // 距离
-        String distance1 = formatDatas[11];
-        String distance0 = formatDatas[12];
-        // 卡路里
-        String calories1 = formatDatas[13];
-        String calories0 = formatDatas[14];
         String dateStr = sdf.format(date);
+        // 步数
+        byte[] step = new byte[4];
+        System.arraycopy(value, index + 3, step, 0, 4);
+        String stepStr = DigitalConver.byteArr2Str(step);
 
-        String count = DigitalConver.decodeToString(sb.toString());
-        String duration = DigitalConver.decodeToString(duration1 + duration0);
-        Locale.setDefault(Locale.US);
-        String distance = new DecimalFormat().format(Integer.parseInt(DigitalConver
-                .decodeToString(distance1 + distance0)) * 0.1);
-        String calories = DigitalConver.decodeToString(calories1 + calories0);
+        // 时长
+        byte[] duration = new byte[2];
+        System.arraycopy(value, index + 7, duration, 0, 2);
+        String durationStr = DigitalConver.byteArr2Str(duration);
+
+        // 距离
+        byte[] distance = new byte[2];
+        System.arraycopy(value, index + 9, distance, 0, 2);
+        String distanceStr = new DecimalFormat().format(DigitalConver.byteArr2Int(distance) * 0.1);
+        // 卡路里
+        byte[] calories = new byte[2];
+        System.arraycopy(value, index + 11, calories, 0, 2);
+        String caloriesStr = DigitalConver.byteArr2Str(calories);
 
         DailyStep dailyStep = new DailyStep();
         dailyStep.date = dateStr;
-        dailyStep.count = count;
-        dailyStep.duration = duration;
-        dailyStep.distance = distance;
-        dailyStep.calories = calories;
+        dailyStep.count = stepStr;
+        dailyStep.duration = durationStr;
+        dailyStep.distance = distanceStr;
+        dailyStep.calories = caloriesStr;
         LogModule.i(dailyStep.toString());
         return dailyStep;
     }
 
-    public static DailySleep parseDailySleepIndex(String[] formatDatas, HashMap<Integer, DailySleep> sleepsMap) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
+
+    public static DailyStep parseCurrentStep(byte[] value) {
+        if (0xb5 != DigitalConver.byte2Int(value[0])
+                || 0x04 != DigitalConver.byte2Int(value[1])
+                || 0x0a != DigitalConver.byte2Int(value[2])) {
+            return null;
+        }
+        // 日期
+        Calendar calendar = Calendar.getInstance();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        Date date = calendar.getTime();
+        String dateStr = sdf.format(date);
+        // 步数
+        byte[] step = new byte[4];
+        System.arraycopy(value, 3, step, 0, 4);
+        String stepStr = DigitalConver.byteArr2Str(step);
+
+        // 时长
+        byte[] duration = new byte[2];
+        System.arraycopy(value, 7, duration, 0, 2);
+        String durationStr = DigitalConver.byteArr2Str(duration);
+
+        // 距离
+        byte[] distance = new byte[2];
+        System.arraycopy(value, 9, distance, 0, 2);
+        String distanceStr = new DecimalFormat().format(DigitalConver.byteArr2Int(distance) * 0.1);
+        // 卡路里
+        byte[] calories = new byte[2];
+        System.arraycopy(value, 11, calories, 0, 2);
+        String caloriesStr = DigitalConver.byteArr2Str(calories);
+
+        DailyStep dailyStep = new DailyStep();
+        dailyStep.date = dateStr;
+        dailyStep.count = stepStr;
+        dailyStep.duration = durationStr;
+        dailyStep.distance = distanceStr;
+        dailyStep.calories = caloriesStr;
+        return dailyStep;
+    }
+
+    public static DailySleep parseDailySleepIndex(byte[] value, HashMap<Integer, DailySleep> sleepsMap, int index) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
         Calendar calendar = Calendar.getInstance();
         // 起始时间
-        String startYear = formatDatas[2];
-        String startMonth = formatDatas[3];
-        String startDay = formatDatas[4];
-        String startHour = formatDatas[5];
-        String startMin = formatDatas[6];
-        calendar.set(2000 + Integer.parseInt(DigitalConver.decodeToString(startYear)),
-                Integer.parseInt(DigitalConver.decodeToString(startMonth)) - 1,
-                Integer.parseInt(DigitalConver.decodeToString(startDay)),
-                Integer.parseInt(DigitalConver.decodeToString(startHour)),
-                Integer.parseInt(DigitalConver.decodeToString(startMin)));
+        calendar.set(2000 + DigitalConver.byte2Int(value[index + 1]),
+                DigitalConver.byte2Int(value[index + 2]) - 1,
+                DigitalConver.byte2Int(value[index + 3]),
+                DigitalConver.byte2Int(value[index + 4]),
+                DigitalConver.byte2Int(value[index + 5]));
         Date startDate = calendar.getTime();
         String startDateStr = sdf.format(startDate);
         // 结束时间
-        String endYear = formatDatas[7];
-        String endMonth = formatDatas[8];
-        String endDay = formatDatas[9];
-        String endHour = formatDatas[10];
-        String endMin = formatDatas[11];
-        calendar.set(2000 + Integer.parseInt(DigitalConver.decodeToString(endYear)),
-                Integer.parseInt(DigitalConver.decodeToString(endMonth)) - 1,
-                Integer.parseInt(DigitalConver.decodeToString(endDay)),
-                Integer.parseInt(DigitalConver.decodeToString(endHour)),
-                Integer.parseInt(DigitalConver.decodeToString(endMin)));
+        calendar.set(2000 + DigitalConver.byte2Int(value[index + 6]),
+                DigitalConver.byte2Int(value[index + 7]) - 1,
+                DigitalConver.byte2Int(value[index + 8]),
+                DigitalConver.byte2Int(value[index + 9]),
+                DigitalConver.byte2Int(value[index + 10]));
         Date endDate = calendar.getTime();
         String endDateStr = sdf.format(endDate);
         // 深睡
-        String deep1 = formatDatas[12];
-        String deep0 = formatDatas[13];
-        String deep = DigitalConver.decodeToString(deep1 + deep0);
+        byte[] deep = new byte[2];
+        System.arraycopy(value, index + 11, deep, 0, 2);
+        String deepStr = DigitalConver.byteArr2Str(deep);
         // 浅睡
-        String light1 = formatDatas[14];
-        String light0 = formatDatas[15];
-        String light = DigitalConver.decodeToString(light1 + light0);
+        byte[] light = new byte[2];
+        System.arraycopy(value, index + 13, light, 0, 2);
+        String lightStr = DigitalConver.byteArr2Str(light);
         // 清醒
-        String awake1 = formatDatas[16];
-        String awake0 = formatDatas[17];
-        String awake = DigitalConver.decodeToString(awake1 + awake0);
+        byte[] awake = new byte[2];
+        System.arraycopy(value, index + 15, awake, 0, 2);
+        String awakeStr = DigitalConver.byteArr2Str(awake);
 
         // 记录睡眠日期
-        String date = new SimpleDateFormat("yyy-MM-dd", Locale.US).format(endDate);
+        String date = new SimpleDateFormat("yyy-MM-dd").format(endDate);
 
         // 构造睡眠数据
         DailySleep dailySleep = new DailySleep();
         dailySleep.date = date;
         dailySleep.startTime = startDateStr;
         dailySleep.endTime = endDateStr;
-        dailySleep.deepDuration = deep;
-        dailySleep.lightDuration = light;
-        dailySleep.awakeDuration = awake;
+        dailySleep.deepDuration = deepStr;
+        dailySleep.lightDuration = lightStr;
+        dailySleep.awakeDuration = awakeStr;
         dailySleep.records = new ArrayList<>();
         LogModule.i(dailySleep.toString());
         // 暂存睡眠数据，以index为key，以实例为value，方便更新record;
-        sleepsMap.put(Integer.valueOf(DigitalConver.decodeToString(formatDatas[1])), dailySleep);
+        sleepsMap.put(DigitalConver.byte2Int(value[index]), dailySleep);
         return dailySleep;
     }
 
-    public static void parseDailySleepRecord(String[] formatDatas, HashMap<Integer, DailySleep> mSleepsMap) {
-        DailySleep dailySleep = mSleepsMap.get(Integer.valueOf(DigitalConver.decodeToString(formatDatas[1])));
+    public static void parseDailySleepRecord(byte[] value, HashMap<Integer, DailySleep> mSleepsMap, int index) {
+        DailySleep dailySleep = mSleepsMap.get(DigitalConver.byte2Int(value[index]));
         if (dailySleep != null) {
-            int len = Integer.valueOf(DigitalConver.decodeToString(formatDatas[3]));
+            int len = DigitalConver.byte2Int(value[index + 2]);
             if (dailySleep.records == null) {
                 dailySleep.records = new ArrayList<>();
             }
-            for (int i = 0; i < len && 4 + i < formatDatas.length; i++) {
-                String hex = formatDatas[4 + i];
+            for (int i = 0; i < len && index + 3 + i < value.length; i++) {
+                String hex = DigitalConver.byte2HexString(value[index + 3 + i]);
                 // 转换为二进制
                 String binary = DigitalConver.hexString2binaryString(hex);
                 for (int j = binary.length(); j > 0; ) {
@@ -146,30 +168,30 @@ public class ComplexDataParse {
         }
     }
 
-    public static void parseHeartRate(String[] formatDatas, ArrayList<HeartRate> heartRates) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
+    public static void parseHeartRate(byte[] value, ArrayList<HeartRate> heartRates) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
         Calendar calendar = Calendar.getInstance();
         for (int i = 0; i < 3; i++) {
-            String year = formatDatas[i * 6 + 2];
-            String month = formatDatas[i * 6 + 3];
-            String day = formatDatas[i * 6 + 4];
-            String hour = formatDatas[i * 6 + 5];
-            String min = formatDatas[i * 6 + 6];
-            String value = formatDatas[i * 6 + 7];
-            if (Integer.parseInt(DigitalConver.decodeToString(year)) == 0) {
+            byte year = value[i * 6 + 2];
+            byte month = value[i * 6 + 3];
+            byte day = value[i * 6 + 4];
+            byte hour = value[i * 6 + 5];
+            byte min = value[i * 6 + 6];
+            byte heartRateValue = value[i * 6 + 7];
+            if (DigitalConver.byte2Int(year) == 0) {
                 continue;
             }
-            calendar.set(2000 + Integer.parseInt(DigitalConver.decodeToString(year)),
-                    Integer.parseInt(DigitalConver.decodeToString(month)) - 1,
-                    Integer.parseInt(DigitalConver.decodeToString(day)),
-                    Integer.parseInt(DigitalConver.decodeToString(hour)),
-                    Integer.parseInt(DigitalConver.decodeToString(min)));
+            calendar.set(2000 + DigitalConver.byte2Int(year),
+                    DigitalConver.byte2Int(month) - 1,
+                    DigitalConver.byte2Int(day),
+                    DigitalConver.byte2Int(hour),
+                    DigitalConver.byte2Int(min));
             Date time = calendar.getTime();
             String heartRateTime = sdf.format(time);
-            String heartRateValue = DigitalConver.decodeToString(value);
+            String heartRateStr = DigitalConver.byte2Int(heartRateValue) + "";
             HeartRate heartRate = new HeartRate();
             heartRate.time = heartRateTime;
-            heartRate.value = heartRateValue;
+            heartRate.value = heartRateStr;
             LogModule.i(heartRate.toString());
             heartRates.add(heartRate);
         }

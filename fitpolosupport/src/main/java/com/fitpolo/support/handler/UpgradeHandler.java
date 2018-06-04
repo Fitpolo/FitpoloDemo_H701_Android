@@ -6,13 +6,12 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
 
-import com.fitpolo.support.FitConstant;
-import com.fitpolo.support.OrderEnum;
-import com.fitpolo.support.bluetooth.BluetoothModule;
-import com.fitpolo.support.callback.ConnStateCallback;
-import com.fitpolo.support.callback.OrderCallback;
-import com.fitpolo.support.entity.BaseResponse;
+import com.fitpolo.support.MokoSupport;
+import com.fitpolo.support.callback.MokoConnStateCallback;
+import com.fitpolo.support.callback.MokoOrderTaskCallback;
 import com.fitpolo.support.entity.CRCVerifyResponse;
+import com.fitpolo.support.entity.OrderEnum;
+import com.fitpolo.support.entity.OrderTaskResponse;
 import com.fitpolo.support.log.LogModule;
 import com.fitpolo.support.task.CRCVerifyTask;
 import com.fitpolo.support.task.UpgradeBandTask;
@@ -22,10 +21,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
-public class UpgradeHandler implements ConnStateCallback, OrderCallback {
+public class UpgradeHandler implements MokoConnStateCallback, MokoOrderTaskCallback {
     public static final int EXCEPTION_FILEPATH_IS_NULL = 0x01;
     public static final int EXCEPTION_DEVICE_MAC_ADDRESS_IS_NULL = 0x02;
     public static final int EXCEPTION_UPGRADE_FAILURE = 0x03;
+    // 返回数据包头
+    public static final int RESPONSE_HEADER_PACKAGE = 0xA6;
+    // 返回数据包结果
+    public static final int RESPONSE_HEADER_PACKAGE_RESULT = 0xA7;
     private InputStream in;
     private Context context;
     private boolean isConnSuccess;
@@ -53,11 +56,12 @@ public class UpgradeHandler implements ConnStateCallback, OrderCallback {
         }
         this.mDeviceMacAddress = deviceMacAddress;
         // first:disConnect
-        BluetoothModule.getInstance().disConnectBle();
+        MokoSupport.getInstance().setReconnectCount(0);
+        MokoSupport.getInstance().disConnectBle();
         new Handler(context.getMainLooper()).postDelayed(new Runnable() {
             @Override
             public void run() {
-                BluetoothModule.getInstance().createBluetoothGatt(context, mDeviceMacAddress, UpgradeHandler.this);
+                MokoSupport.getInstance().connDevice(context, mDeviceMacAddress, UpgradeHandler.this);
             }
         }, 4000);
     }
@@ -66,7 +70,7 @@ public class UpgradeHandler implements ConnStateCallback, OrderCallback {
     // connect callback
     ///////////////////////////////////////////////////////////////////////////
     @Override
-    public void onConnSuccess() {
+    public void onConnectSuccess() {
         isConnSuccess = true;
         final File file = new File(mFilePath);
         new Handler(context.getMainLooper()).postDelayed(new Runnable() {
@@ -82,12 +86,7 @@ public class UpgradeHandler implements ConnStateCallback, OrderCallback {
     }
 
     @Override
-    public void onConnFailure(int errorCode) {
-        onDeviceDisconnected();
-    }
-
-    @Override
-    public void onDisconnect() {
+    public void onDisConnected() {
         onDeviceDisconnected();
     }
 
@@ -99,13 +98,14 @@ public class UpgradeHandler implements ConnStateCallback, OrderCallback {
     private void onDeviceDisconnected() {
         if (!isConnSuccess) {
             if (isConnDevice()) {
-                BluetoothModule.getInstance().disConnectBle();
+                MokoSupport.getInstance().setReconnectCount(0);
+                MokoSupport.getInstance().disConnectBle();
             }
         }
         if (isUpgradeDone) {
             return;
         }
-        if (BluetoothModule.getInstance().isBluetoothOpen() && BluetoothModule.getInstance().getReconnectCount() > 0) {
+        if (MokoSupport.getInstance().isBluetoothOpen() && MokoSupport.getInstance().getReconnectCount() > 0) {
             return;
         }
         onUpgradeFailure();
@@ -124,24 +124,25 @@ public class UpgradeHandler implements ConnStateCallback, OrderCallback {
 
     public void getCRCVerifyResult(int fileCRCResult, int fileLengthResult) {
         CRCVerifyTask task = new CRCVerifyTask(this, fileCRCResult, fileLengthResult);
-        BluetoothModule.getInstance().sendOrder(task);
+        MokoSupport.getInstance().sendOrder(task);
     }
 
     public void upgradeBand(byte[] packageIndex, byte[] fileBytes) {
         UpgradeBandTask task = new UpgradeBandTask(this, packageIndex, fileBytes);
-        BluetoothModule.getInstance().sendDirectOrder(task);
+        MokoSupport.getInstance().sendUpgradeOrder(task);
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // order callback
     ///////////////////////////////////////////////////////////////////////////
     @Override
-    public void onOrderResult(OrderEnum order, BaseResponse response) {
-        switch (order) {
+    public void onOrderResult(OrderTaskResponse response) {
+        OrderEnum orderEnum = response.order;
+        switch (orderEnum) {
             case getCRCVerifyResult:
                 CRCVerifyResponse crcResponse = (CRCVerifyResponse) response;
-                if (crcResponse.header == FitConstant.RESPONSE_HEADER_PACKAGE) {
-                    if (DigitalConver.toInt(crcResponse.packageResult) == 0) {
+                if (crcResponse.header == RESPONSE_HEADER_PACKAGE) {
+                    if (DigitalConver.byteArr2Int(crcResponse.packageResult) == 0) {
                         LogModule.i("upgrade start！");
                         new Thread(new Runnable() {
                             @Override
@@ -153,7 +154,7 @@ public class UpgradeHandler implements ConnStateCallback, OrderCallback {
                                         in = new FileInputStream(file);
                                     }
                                     while (in.available() > 0 && !isStop) {
-                                        byte[] indexByte = DigitalConver.toByteArray(i, 2);
+                                        byte[] indexByte = DigitalConver.int2ByteArr(i, 2);
                                         byte b[] = new byte[17];
                                         in.read(b);
                                         upgradeBand(indexByte, b);
@@ -190,7 +191,7 @@ public class UpgradeHandler implements ConnStateCallback, OrderCallback {
                             }
                         }).start();
                     }
-                } else if (crcResponse.header == FitConstant.RESPONSE_HEADER_PACKAGE_RESULT) {
+                } else if (crcResponse.header == RESPONSE_HEADER_PACKAGE_RESULT) {
                     switch (crcResponse.ack) {
                         case 0:
                             LogModule.i("upgrade success！");
@@ -200,9 +201,10 @@ public class UpgradeHandler implements ConnStateCallback, OrderCallback {
                                     mCallback.onUpgradeDone();
                                 }
                             });
-                            BluetoothModule.getInstance().setShouldUpgrade(false);
+                            MokoSupport.canUpgrade = false;
                             isUpgradeDone = true;
-                            BluetoothModule.getInstance().disConnectBle();
+                            MokoSupport.getInstance().setReconnectCount(0);
+                            MokoSupport.getInstance().disConnectBle();
                             isStop = true;
                             break;
                         case 1:
@@ -228,12 +230,8 @@ public class UpgradeHandler implements ConnStateCallback, OrderCallback {
     }
 
     @Override
-    public void onOrderTimeout(OrderEnum order) {
-        switch (order) {
-            case getCRCVerifyResult:
-                onUpgradeFailure();
-                break;
-        }
+    public void onOrderTimeout(OrderTaskResponse response) {
+
     }
 
     @Override
@@ -247,7 +245,7 @@ public class UpgradeHandler implements ConnStateCallback, OrderCallback {
     public int CalcCrc16(String filePath) throws Exception {
         File file = new File(filePath);
         InputStream in = new FileInputStream(file);
-        byte[] pchMsg = new byte[128 * 1024];
+        byte[] pchMsg = new byte[512 * 1024];
         int wDataLen = in.available();
         in.read(pchMsg);
         int crc = 0xffff;
@@ -270,7 +268,7 @@ public class UpgradeHandler implements ConnStateCallback, OrderCallback {
     }
 
     public boolean isConnDevice() {
-        return BluetoothModule.getInstance().isConnDevice(context, mDeviceMacAddress);
+        return MokoSupport.getInstance().isConnDevice(context, mDeviceMacAddress);
     }
 
     public interface IUpgradeCallback {
@@ -279,6 +277,10 @@ public class UpgradeHandler implements ConnStateCallback, OrderCallback {
         void onProgress(int progress);
 
         void onUpgradeDone();
+    }
+
+    public void setStop(boolean stop) {
+        isStop = stop;
     }
 }
 

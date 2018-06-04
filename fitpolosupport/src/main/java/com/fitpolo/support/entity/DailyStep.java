@@ -30,7 +30,7 @@ public class DailyStep implements Comparable<DailyStep> {
     }
 
     public Calendar strDate2Calendar(String strDate, String pattern) {
-        SimpleDateFormat sdf = new SimpleDateFormat(pattern, Locale.US);
+        SimpleDateFormat sdf = new SimpleDateFormat(pattern);
         try {
             Date date = sdf.parse(strDate);
             Calendar calendar = Calendar.getInstance();

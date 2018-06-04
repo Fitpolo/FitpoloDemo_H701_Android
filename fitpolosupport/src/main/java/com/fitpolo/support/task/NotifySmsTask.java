@@ -1,0 +1,41 @@
+package com.fitpolo.support.task;
+
+import com.fitpolo.support.entity.OrderEnum;
+import com.fitpolo.support.callback.MokoOrderTaskCallback;
+import com.fitpolo.support.entity.OrderType;
+
+/**
+ * @Date 2017/5/11
+ * @Author wenzheng.liu
+ * @Description 设置短信震动
+ * @ClassPath com.fitpolo.support.task.NotifySmsTask
+ */
+public class NotifySmsTask extends OrderTask {
+    private static final int ORDERDATA_LENGTH = 20;
+
+    private static final int HEADER_SMS_SHAKE = 0x9A;
+    private byte[] orderData;
+
+
+    public NotifySmsTask(MokoOrderTaskCallback callback, String showText, boolean isPhoneNumber) {
+        super(OrderType.WRITE, OrderEnum.setSmsComingShake, callback, OrderTask.RESPONSE_TYPE_WRITE_NO_RESPONSE);
+        orderData = new byte[ORDERDATA_LENGTH];
+        orderData[0] = (byte) HEADER_SMS_SHAKE;
+        if (isPhoneNumber) {
+            orderData[1] = 0x01;
+        } else {
+            orderData[1] = 0x00;
+        }
+        orderData[2] = 0x00;
+        orderData[3] = showText.length() > 16 ? 0x10 : (byte) showText.length();
+        for (int i = 0; i < showText.length() && i < 16; i++) {
+            int c = (int) showText.charAt(i);
+            orderData[i + 4] = (byte) c;
+        }
+    }
+
+    @Override
+    public byte[] assemble() {
+        return orderData;
+    }
+}

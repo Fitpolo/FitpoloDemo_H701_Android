@@ -6,7 +6,7 @@ package com.fitpolo.support.entity;
  * @Description
  * @ClassPath com.fitpolo.support.entity.CRCVerifyResponse
  */
-public class CRCVerifyResponse extends BaseResponse {
+public class CRCVerifyResponse extends OrderTaskResponse {
     public byte[] packageResult;
     public int header;
     public int ack;

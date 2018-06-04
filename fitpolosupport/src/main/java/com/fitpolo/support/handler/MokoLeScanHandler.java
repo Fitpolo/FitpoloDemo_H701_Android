@@ -4,7 +4,7 @@ import android.bluetooth.BluetoothDevice;
 import android.text.TextUtils;
 import android.util.SparseArray;
 
-import com.fitpolo.support.callback.ScanDeviceCallback;
+import com.fitpolo.support.callback.MokoScanDeviceCallback;
 import com.fitpolo.support.entity.BleDevice;
 import com.fitpolo.support.utils.DigitalConver;
 
@@ -18,9 +18,9 @@ import no.nordicsemi.android.support.v18.scanner.ScanResult;
  * @ClassPath com.moko.support.handler.MokoLeScanHandler
  */
 public class MokoLeScanHandler extends ScanCallback {
-    private ScanDeviceCallback callback;
+    private MokoScanDeviceCallback callback;
 
-    public MokoLeScanHandler(ScanDeviceCallback callback) {
+    public MokoLeScanHandler(MokoScanDeviceCallback callback) {
         this.callback = callback;
     }
 
