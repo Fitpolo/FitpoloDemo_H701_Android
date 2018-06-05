@@ -68,34 +68,6 @@ public class MokoCharacteristicHandler {
                     }
                 }
             }
-            if (service.getUuid().toString().startsWith(SERVICE_UUID_HEADER_NEW)) {
-                for (BluetoothGattCharacteristic characteristic : characteristics) {
-                    String characteristicUuid = characteristic.getUuid().toString();
-                    if (TextUtils.isEmpty(characteristicUuid)) {
-                        continue;
-                    }
-                    if (characteristicUuid.equals(OrderType.READ_CHARACTER.getUuid())) {
-                        gatt.setCharacteristicNotification(characteristic, true);
-                        mokoCharacteristicMap.put(OrderType.READ_CHARACTER, new MokoCharacteristic(characteristic, OrderType.READ_CHARACTER));
-                        continue;
-                    }
-                    if (characteristicUuid.equals(OrderType.WRITE_CHARACTER.getUuid())) {
-                        gatt.setCharacteristicNotification(characteristic, true);
-                        mokoCharacteristicMap.put(OrderType.WRITE_CHARACTER, new MokoCharacteristic(characteristic, OrderType.WRITE_CHARACTER));
-                        continue;
-                    }
-                    if (characteristicUuid.equals(OrderType.STEP_CHARACTER.getUuid())) {
-                        gatt.setCharacteristicNotification(characteristic, true);
-                        mokoCharacteristicMap.put(OrderType.STEP_CHARACTER, new MokoCharacteristic(characteristic, OrderType.STEP_CHARACTER));
-                        continue;
-                    }
-                    if (characteristicUuid.equals(OrderType.HEART_RATE_CHARACTER.getUuid())) {
-                        gatt.setCharacteristicNotification(characteristic, true);
-                        mokoCharacteristicMap.put(OrderType.HEART_RATE_CHARACTER, new MokoCharacteristic(characteristic, OrderType.HEART_RATE_CHARACTER));
-                        continue;
-                    }
-                }
-            }
         }
         return mokoCharacteristicMap;
     }
