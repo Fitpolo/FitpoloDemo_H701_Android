@@ -62,7 +62,7 @@ public class InnerVersionTask extends OrderTask {
         }
         // 小版本号，判断部分功能有无
         MokoSupport.versionCodeLast = value[4] & 0xFF;
-        LogModule.i("版本号末尾：" + MokoSupport.versionCodeLast);
+        LogModule.i("Version code last：" + MokoSupport.versionCodeLast);
         // 判断是否升级
         MokoSupport.canUpgrade = MokoSupport.versionCodeLast < MokoSupport.firmwareEnum.getLastestVersion();
 

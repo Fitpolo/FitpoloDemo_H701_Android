@@ -31,14 +31,24 @@ public class GuideActivity extends BaseActivity {
             finish();
             return;
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!isWriteStoragePermissionOpen()) {
+                showRequestPermissionDialog();
+                return;
+            }
+        }
         delayGotoMain();
     }
 
 
     private void delayGotoMain() {
-        if (MokoSupport.getInstance().isBluetoothOpen()) {
+        if (!MokoSupport.getInstance().isBluetoothOpen()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, AppConstants.REQUEST_CODE_ENABLE_BT);
+            return;
+        }
+        if (!Utils.isLocServiceEnable(this)) {
+            showOpenLocationDialog();
             return;
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -54,9 +64,19 @@ public class GuideActivity extends BaseActivity {
                 }
             }
         }
-        startService(new Intent(this, MokoService.class));
-        startActivity(new Intent(GuideActivity.this, MainActivity.class));
-        GuideActivity.this.finish();
+        new Thread() {
+            public void run() {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                startService(new Intent(GuideActivity.this, MokoService.class));
+                startActivity(new Intent(GuideActivity.this, MainActivity.class));
+                GuideActivity.this.finish();
+            }
+        }.start();
+
     }
 
     @Override

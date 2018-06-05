@@ -24,6 +24,9 @@
         <activity
             android:name=".activity.MainActivity"
             android:screenOrientation="portrait" />
+        <activity
+            android:name=".activity.MessageNotificationActivity"
+            android:screenOrientation="portrait" />
 
         <service android:name="com.fitpolo.demo.service.MokoService" />
 

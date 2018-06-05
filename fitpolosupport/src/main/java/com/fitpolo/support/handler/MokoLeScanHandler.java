@@ -44,6 +44,9 @@ public class MokoLeScanHandler extends ScanCallback {
             String verifyCode = DigitalConver.byte2HexString(manufacturerSpecificData[2])
                     + DigitalConver.byte2HexString(manufacturerSpecificData[3])
                     + DigitalConver.byte2HexString(manufacturerSpecificData[4]);
+            if (!"02".equals(DigitalConver.byte2HexString(manufacturerSpecificData[4]))) {
+                return;
+            }
             BleDevice bleDevice = new BleDevice();
             bleDevice.name = device.getName();
             bleDevice.address = device.getAddress();

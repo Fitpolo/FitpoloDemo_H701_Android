@@ -65,6 +65,8 @@ public class AllHeartRateTask extends OrderTask {
             ComplexDataParse.parseHeartRate(value, heartRates);
             heartRateCount--;
 
+            MokoSupport.getInstance().setHeartRatesCount(heartRateCount);
+            MokoSupport.getInstance().setHeartRates(heartRates);
             if (heartRateCount > 0) {
                 LogModule.i("还有" + heartRateCount + "条心率数据未同步");
                 heartRatesMap.put(heartRateCount, false);

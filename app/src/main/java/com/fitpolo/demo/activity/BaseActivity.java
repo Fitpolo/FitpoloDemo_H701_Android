@@ -17,7 +17,7 @@ public class BaseActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (savedInstanceState != null) {
-            Intent intent = new Intent(this, MainActivity.class);
+            Intent intent = new Intent(this, GuideActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
             return;
@@ -47,14 +47,6 @@ public class BaseActivity extends Activity {
         } else {
             return true;
         }
-    }
-
-    public boolean isConstactsPermissionOpen() {
-        return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED;
-    }
-
-    public boolean isPhoneStatePermissionOpen() {
-        return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
     }
 
     public boolean isWriteStoragePermissionOpen() {

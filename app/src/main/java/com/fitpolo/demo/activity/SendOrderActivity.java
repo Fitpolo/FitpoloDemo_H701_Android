@@ -110,6 +110,7 @@ public class SendOrderActivity extends BaseActivity {
     Button btnFirmwareParams;
     private MokoService mService;
     private String deviceMacAddress;
+    private boolean mIsUpgrade;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -137,13 +138,14 @@ public class SendOrderActivity extends BaseActivity {
                 }
                 if (MokoConstants.ACTION_CONN_STATUS_DISCONNECTED.equals(action)) {
                     abortBroadcast();
-                    Toast.makeText(SendOrderActivity.this, "Connect failed", Toast.LENGTH_SHORT).show();
-                    SendOrderActivity.this.finish();
+                    if (!mIsUpgrade) {
+                        Toast.makeText(SendOrderActivity.this, "Connect failed", Toast.LENGTH_SHORT).show();
+                        SendOrderActivity.this.finish();
+                    }
                 }
                 if (MokoConstants.ACTION_ORDER_RESULT.equals(action)) {
                     OrderTaskResponse response = (OrderTaskResponse) intent.getSerializableExtra(MokoConstants.EXTRA_KEY_RESPONSE_ORDER_TASK);
                     OrderEnum orderEnum = response.order;
-                    Toast.makeText(SendOrderActivity.this, "Success", Toast.LENGTH_SHORT).show();
                     switch (orderEnum) {
                         case getInnerVersion:
 
@@ -159,6 +161,7 @@ public class SendOrderActivity extends BaseActivity {
                             btnReadAllAlarms.setVisibility(MokoSupport.supportNotifyAndRead ? View.VISIBLE : View.GONE);
                             btnReadSettings.setVisibility(MokoSupport.supportNotifyAndRead ? View.VISIBLE : View.GONE);
                             btnReadSitAlert.setVisibility(MokoSupport.supportNotifyAndRead ? View.VISIBLE : View.GONE);
+                            btnNotification.setVisibility(MokoSupport.supportNotifyAndRead ? View.VISIBLE : View.GONE);
 
                             LogModule.i("Support heartRate：" + MokoSupport.showHeartRate);
                             LogModule.i("Support newData：" + MokoSupport.supportNewData);
@@ -196,36 +199,54 @@ public class SendOrderActivity extends BaseActivity {
                             break;
                         case getAllSteps:
                             ArrayList<DailyStep> steps = MokoSupport.getInstance().getDailySteps();
+                            if (steps == null || steps.isEmpty()) {
+                                return;
+                            }
                             for (DailyStep step : steps) {
                                 LogModule.i(step.toString());
                             }
                             break;
                         case getAllSleepIndex:
                             ArrayList<DailySleep> sleeps = MokoSupport.getInstance().getDailySleeps();
+                            if (sleeps == null || sleeps.isEmpty()) {
+                                return;
+                            }
                             for (DailySleep sleep : sleeps) {
                                 LogModule.i(sleep.toString());
                             }
                             break;
                         case getAllHeartRate:
                             ArrayList<HeartRate> heartRates = MokoSupport.getInstance().getHeartRates();
+                            if (heartRates == null || heartRates.isEmpty()) {
+                                return;
+                            }
                             for (HeartRate heartRate : heartRates) {
                                 LogModule.i(heartRate.toString());
                             }
                             break;
                         case getLastestSteps:
                             ArrayList<DailyStep> lastestSteps = MokoSupport.getInstance().getDailySteps();
+                            if (lastestSteps == null || lastestSteps.isEmpty()) {
+                                return;
+                            }
                             for (DailyStep step : lastestSteps) {
                                 LogModule.i(step.toString());
                             }
                             break;
                         case getLastestSleepIndex:
                             ArrayList<DailySleep> lastestSleeps = MokoSupport.getInstance().getDailySleeps();
+                            if (lastestSleeps == null || lastestSleeps.isEmpty()) {
+                                return;
+                            }
                             for (DailySleep sleep : lastestSleeps) {
                                 LogModule.i(sleep.toString());
                             }
                             break;
                         case getLastestHeartRate:
                             ArrayList<HeartRate> lastestHeartRate = MokoSupport.getInstance().getHeartRates();
+                            if (lastestHeartRate == null || lastestHeartRate.isEmpty()) {
+                                return;
+                            }
                             for (HeartRate heartRate : lastestHeartRate) {
                                 LogModule.i(heartRate.toString());
                             }
@@ -266,7 +287,7 @@ public class SendOrderActivity extends BaseActivity {
                     Toast.makeText(SendOrderActivity.this, "Timeout", Toast.LENGTH_SHORT).show();
                 }
                 if (MokoConstants.ACTION_ORDER_FINISH.equals(action)) {
-                    LogModule.i("Finish");
+                    Toast.makeText(SendOrderActivity.this, "Success", Toast.LENGTH_SHORT).show();
                 }
             }
         }
@@ -376,14 +397,26 @@ public class SendOrderActivity extends BaseActivity {
     }
 
     public void getAllSteps(View view) {
+        if (MokoSupport.getInstance().getDailyStepCount() == 0) {
+            Toast.makeText(this, "Get step count first", Toast.LENGTH_SHORT).show();
+            return;
+        }
         mService.getAllSteps();
     }
 
     public void getAllSleeps(View view) {
+        if (MokoSupport.getInstance().getSleepIndexCount() == 0) {
+            Toast.makeText(this, "Get sleep count first", Toast.LENGTH_SHORT).show();
+            return;
+        }
         mService.getAllSleeps();
     }
 
     public void getAllHeartRate(View view) {
+        if (MokoSupport.getInstance().getHeartRateCount() == 0) {
+            Toast.makeText(this, "Get heartrate count first", Toast.LENGTH_SHORT).show();
+            return;
+        }
         mService.getAllHeartRate();
     }
 
@@ -434,7 +467,7 @@ public class SendOrderActivity extends BaseActivity {
     }
 
     public void notification(View view) {
-        // TODO: 2018/6/4 跳转打开通知页面
+        startActivity(new Intent(this, MessageNotificationActivity.class));
     }
 
     private static final int REQUEST_CODE_FILE = 2;
@@ -453,12 +486,15 @@ public class SendOrderActivity extends BaseActivity {
     private ProgressDialog mDialog;
 
     private void upgrade(String firmwarePath) {
-        mDialog = ProgressDialog.show(this, null, "upgrade...", false, false);
+        mIsUpgrade = true;
+        if (!isFinishing()) {
+            mDialog = ProgressDialog.show(this, null, "upgrade...", false, false);
+        }
         UpgradeHandler upgradeHandler = new UpgradeHandler(this);
         upgradeHandler.setFilePath(firmwarePath, deviceMacAddress, new UpgradeHandler.IUpgradeCallback() {
             @Override
             public void onUpgradeError(int errorCode) {
-                if (mDialog != null && mDialog.isShowing()) {
+                if (mDialog != null && mDialog.isShowing() && !isFinishing()) {
                     mDialog.dismiss();
                 }
                 switch (errorCode) {
@@ -473,18 +509,19 @@ public class SendOrderActivity extends BaseActivity {
                         back();
                         break;
                 }
+                mIsUpgrade = false;
             }
 
             @Override
             public void onProgress(int progress) {
-                if (mDialog != null && mDialog.isShowing()) {
+                if (mDialog != null && mDialog.isShowing() && !isFinishing()) {
                     mDialog.setMessage("upgrade progress:" + progress + "%");
                 }
             }
 
             @Override
             public void onUpgradeDone() {
-                if (mDialog != null && mDialog.isShowing()) {
+                if (mDialog != null && mDialog.isShowing() && !isFinishing()) {
                     mDialog.dismiss();
                 }
                 Toast.makeText(SendOrderActivity.this, "upgrade success", Toast.LENGTH_SHORT).show();
