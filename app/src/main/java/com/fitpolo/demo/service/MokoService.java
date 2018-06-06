@@ -4,53 +4,14 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
-import android.os.Message;
 
 import com.fitpolo.demo.AppConstants;
-import com.fitpolo.demo.utils.Utils;
 import com.fitpolo.support.MokoConstants;
 import com.fitpolo.support.MokoSupport;
 import com.fitpolo.support.callback.MokoConnStateCallback;
 import com.fitpolo.support.callback.MokoOrderTaskCallback;
-import com.fitpolo.support.entity.AutoLighten;
-import com.fitpolo.support.entity.BandAlarm;
-import com.fitpolo.support.entity.CustomScreen;
 import com.fitpolo.support.entity.OrderTaskResponse;
-import com.fitpolo.support.entity.SitAlert;
-import com.fitpolo.support.entity.UserInfo;
-import com.fitpolo.support.handler.BaseMessageHandler;
 import com.fitpolo.support.log.LogModule;
-import com.fitpolo.support.task.AllAlarmTask;
-import com.fitpolo.support.task.AllHeartRateTask;
-import com.fitpolo.support.task.AllSleepIndexTask;
-import com.fitpolo.support.task.AllStepsTask;
-import com.fitpolo.support.task.AutoLightenTask;
-import com.fitpolo.support.task.BatteryDailyStepsCountTask;
-import com.fitpolo.support.task.FirmwareParamTask;
-import com.fitpolo.support.task.FirmwareVersionTask;
-import com.fitpolo.support.task.FunctionDisplayTask;
-import com.fitpolo.support.task.HeartRateIntervalTask;
-import com.fitpolo.support.task.InnerVersionTask;
-import com.fitpolo.support.task.LastScreenTask;
-import com.fitpolo.support.task.LastestHeartRateTask;
-import com.fitpolo.support.task.LastestSleepIndexTask;
-import com.fitpolo.support.task.LastestStepsTask;
-import com.fitpolo.support.task.NotifyPhoneTask;
-import com.fitpolo.support.task.NotifySmsTask;
-import com.fitpolo.support.task.OrderTask;
-import com.fitpolo.support.task.ReadAlarmsTask;
-import com.fitpolo.support.task.ReadSettingTask;
-import com.fitpolo.support.task.ReadSitAlertTask;
-import com.fitpolo.support.task.ShakeBandTask;
-import com.fitpolo.support.task.SitLongTimeAlertTask;
-import com.fitpolo.support.task.SleepHeartCountTask;
-import com.fitpolo.support.task.SystemTimeTask;
-import com.fitpolo.support.task.TimeFormatTask;
-import com.fitpolo.support.task.UnitTypeTask;
-import com.fitpolo.support.task.UserInfoTask;
-
-import java.util.Calendar;
-import java.util.List;
 
 /**
  * @Date 2017/5/17
@@ -118,199 +79,6 @@ public class MokoService extends Service implements MokoConnStateCallback, MokoO
         MokoSupport.getInstance().disConnectBle();
     }
 
-    // 连接设备后要先获取固件版本号，确定功能展示和是否升级
-    public void getInnerVersion() {
-        MokoSupport.getInstance().sendOrder(getInnerVersionTask());
-    }
-
-    public void getFirmwareVersion() {
-        MokoSupport.getInstance().sendOrder(getFirmwareVersionTask());
-    }
-
-    public void getgetBatteryDailyStepsCount() {
-        MokoSupport.getInstance().sendOrder(getBatteryDailyStepsCountTask());
-    }
-
-    public void setSystemTime() {
-        MokoSupport.getInstance().sendOrder(getSystemTimeTask());
-    }
-
-    public void setAllAlarms(List<BandAlarm> alarms) {
-        OrderTask allAlarmTask = syncAllAlarmTask(alarms);
-        MokoSupport.getInstance().sendOrder(allAlarmTask);
-    }
-
-    public void setSitAlert(SitAlert sitAlert) {
-        OrderTask sitAlertTask = syncSitAlert(sitAlert);
-        MokoSupport.getInstance().sendOrder(sitAlertTask);
-    }
-
-    public void setLastScreen(boolean lastScreen) {
-        OrderTask lastScreenTask = syncLastScreenTask(lastScreen);
-        MokoSupport.getInstance().sendOrder(lastScreenTask);
-    }
-
-    public void setUnitType(boolean unitTypeBritish) {
-        OrderTask unitTypeTask = syncUnitTypeTask(unitTypeBritish);
-        MokoSupport.getInstance().sendOrder(unitTypeTask);
-    }
-
-    public void setTimeFormat(int timeFormat) {
-        OrderTask timeFormatTask = syncTimeFormatTask(timeFormat);
-        MokoSupport.getInstance().sendOrder(timeFormatTask);
-    }
-
-    public void setUserInfo(UserInfo userInfo) {
-        MokoSupport.getInstance().sendOrder(syncUserInfoTask(userInfo));
-    }
-
-    public void setAutoLighten(AutoLighten autoLight) {
-        OrderTask autoLightenTask = syncAutoLightenTask(autoLight);
-        MokoSupport.getInstance().sendOrder(autoLightenTask);
-    }
-
-    public void getAllHeartRate() {
-        AllHeartRateTask heartRateTask = new AllHeartRateTask(this);
-        MokoSupport.getInstance().sendOrder(heartRateTask);
-    }
-
-    public void getAllSleeps() {
-        AllSleepIndexTask allSleepIndexTask = new AllSleepIndexTask(this);
-        MokoSupport.getInstance().sendOrder(allSleepIndexTask);
-    }
-
-    public void getSleepHeartCount() {
-        SleepHeartCountTask sleepHeartCountTask = new SleepHeartCountTask(this);
-        MokoSupport.getInstance().sendOrder(sleepHeartCountTask);
-    }
-
-    public void getAllSteps() {
-        AllStepsTask allStepsTask = new AllStepsTask(this);
-        MokoSupport.getInstance().sendOrder(allStepsTask);
-    }
-
-    public void syncFunctionDisplay(CustomScreen functions) {
-        FunctionDisplayTask functionDisplayTask = new FunctionDisplayTask(this, functions);
-        MokoSupport.getInstance().sendOrder(functionDisplayTask);
-    }
-
-    public void syncHeartRateInterval(int interval) {
-        OrderTask heartRateIntervalTask = new HeartRateIntervalTask(this, interval);
-        MokoSupport.getInstance().sendOrder(heartRateIntervalTask);
-    }
-
-
-    private BatteryDailyStepsCountTask getBatteryDailyStepsCountTask() {
-        return new BatteryDailyStepsCountTask(this);
-    }
-
-    private FirmwareVersionTask getFirmwareVersionTask() {
-        return new FirmwareVersionTask(this);
-    }
-
-    public void getFirmwareParams() {
-        OrderTask firmwareParamTask = new FirmwareParamTask(this);
-        MokoSupport.getInstance().sendOrder(firmwareParamTask);
-    }
-
-    private OrderTask syncLastScreenTask(boolean lastScreen) {
-        return new LastScreenTask(this, lastScreen ? 1 : 0);
-    }
-
-    private OrderTask syncAutoLightenTask(AutoLighten autoLight) {
-        return new AutoLightenTask(this, autoLight.autoLighten);
-    }
-
-    private OrderTask syncSitAlert(SitAlert sitAlert) {
-        return new SitLongTimeAlertTask(this, sitAlert);
-    }
-
-    private OrderTask getInnerVersionTask() {
-        return new InnerVersionTask(this);
-    }
-
-    private OrderTask getSystemTimeTask() {
-        return new SystemTimeTask(this);
-    }
-
-    public void readAllAlarms() {
-        MokoSupport.getInstance().sendOrder(new ReadAlarmsTask(this));
-    }
-
-    public void readSettings() {
-        MokoSupport.getInstance().sendOrder(new ReadSettingTask(this));
-    }
-
-    public void readSitAlert() {
-        MokoSupport.getInstance().sendOrder(new ReadSitAlertTask(this));
-    }
-
-    private OrderTask syncAllAlarmTask(List<BandAlarm> bandAlarms) {
-        return new AllAlarmTask(this, bandAlarms);
-    }
-
-    public OrderTask syncUserInfoTask(UserInfo userInfo) {
-        return new UserInfoTask(this, userInfo);
-    }
-
-    private OrderTask syncTimeFormatTask(int timeFormat) {
-        return new TimeFormatTask(this, timeFormat);
-    }
-
-    public OrderTask syncUnitTypeTask(boolean unitTypeBritish) {
-        return new UnitTypeTask(this, unitTypeBritish ? 1 : 0);
-    }
-
-    public ReadSettingTask getReadSettingsTask() {
-        return new ReadSettingTask(this);
-    }
-
-    public ReadSitAlertTask getReadSitAlert() {
-        return new ReadSitAlertTask(this);
-    }
-
-    public void shakeBand() {
-        OrderTask shakeBandTask = new ShakeBandTask(this);
-        MokoSupport.getInstance().sendDirectOrder(shakeBandTask);
-    }
-
-    public void setPhoneNotify(String showText, boolean isPhoneNumber) {
-        OrderTask shakeBandTask = new NotifyPhoneTask(this, showText, isPhoneNumber);
-        MokoSupport.getInstance().sendDirectOrder(shakeBandTask);
-    }
-
-    public void setSmsNotify(String showText, boolean isPhoneNumber) {
-        OrderTask shakeBandTask = new NotifySmsTask(this, showText, isPhoneNumber);
-        MokoSupport.getInstance().sendDirectOrder(shakeBandTask);
-    }
-
-    public void getLastestSteps() {
-        Calendar lastSyncTime = Utils.strDate2Calendar("2018-06-01 00:00", AppConstants.PATTERN_YYYY_MM_DD_HH_MM);
-        OrderTask stepsTask = new LastestStepsTask(this, lastSyncTime);
-        MokoSupport.getInstance().sendOrder(stepsTask);
-    }
-
-    public void getLastestSleeps() {
-        Calendar lastSyncTime = Utils.strDate2Calendar("2018-06-01 00:00", AppConstants.PATTERN_YYYY_MM_DD_HH_MM);
-        OrderTask sleepGeneral = new LastestSleepIndexTask(this, lastSyncTime);
-        MokoSupport.getInstance().sendOrder(sleepGeneral);
-    }
-
-    public void getLastestHeartRate() {
-        Calendar lastSyncTime = Utils.strDate2Calendar("2018-06-01 00:00", AppConstants.PATTERN_YYYY_MM_DD_HH_MM);
-        OrderTask heartRateTask = new LastestHeartRateTask(this, lastSyncTime);
-        MokoSupport.getInstance().sendOrder(heartRateTask);
-    }
-
-    public void sendMultiOrders() {
-        LogModule.i("发送多个命令...");
-        SystemTimeTask systemTimeTask = new SystemTimeTask(this);
-        LastScreenTask lastShowTask = new LastScreenTask(this, 0);
-        AutoLightenTask autoLightenTask = new AutoLightenTask(this, 1);
-        FirmwareVersionTask firmwareVersionTask = new FirmwareVersionTask(this);
-        MokoSupport.getInstance().sendOrder(systemTimeTask, lastShowTask, autoLightenTask, firmwareVersionTask);
-    }
-
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -358,19 +126,6 @@ public class MokoService extends Service implements MokoConnStateCallback, MokoO
     public class LocalBinder extends Binder {
         public MokoService getService() {
             return MokoService.this;
-        }
-    }
-
-    public ServiceHandler mHandler;
-
-    public class ServiceHandler extends BaseMessageHandler<MokoService> {
-
-        public ServiceHandler(MokoService service) {
-            super(service);
-        }
-
-        @Override
-        protected void handleMessage(MokoService service, Message msg) {
         }
     }
 }
