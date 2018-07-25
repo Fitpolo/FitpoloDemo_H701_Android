@@ -37,6 +37,7 @@ import com.fitpolo.support.task.AllSleepIndexTask;
 import com.fitpolo.support.task.LastestSleepIndexTask;
 import com.fitpolo.support.task.OpenNotifyTask;
 import com.fitpolo.support.task.OrderTask;
+import com.fitpolo.support.task.UpgradeBandTask;
 import com.fitpolo.support.utils.BaseHandler;
 import com.fitpolo.support.utils.BleConnectionCompat;
 import com.fitpolo.support.utils.DigitalConver;
@@ -412,7 +413,9 @@ public class MokoSupport implements MokoResponseCallback {
 
     @Override
     public void onCharacteristicWrite(byte[] value) {
-
+        if ((value[0] & 0xff) == UpgradeBandTask.HEADER_UPGRADE_BAND && mIUpgradeDataListener != null) {
+            mIUpgradeDataListener.onDataSendSuccess(value);
+        }
     }
 
     @Override
@@ -689,8 +692,15 @@ public class MokoSupport implements MokoResponseCallback {
         });
     }
 
+    public interface IUpgradeDataListener {
+        void onDataSendSuccess(byte[] values);
+    }
+
+    private IUpgradeDataListener mIUpgradeDataListener;
+
     // 发送升级命令
-    public void sendUpgradeOrder(OrderTask orderTask) {
+    public void sendUpgradeOrder(OrderTask orderTask, IUpgradeDataListener IUpgradeDataListener) {
+        mIUpgradeDataListener = IUpgradeDataListener;
         final MokoCharacteristic mokoCharacteristic = mCharacteristicMap.get(orderTask.orderType);
         if (mokoCharacteristic == null) {
             LogModule.i("executeTask : mokoCharacteristic is null");

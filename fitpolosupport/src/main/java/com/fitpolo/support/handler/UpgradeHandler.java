@@ -19,9 +19,10 @@ import com.fitpolo.support.utils.DigitalConver;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 
-public class UpgradeHandler implements MokoConnStateCallback, MokoOrderTaskCallback {
+public class UpgradeHandler implements MokoConnStateCallback, MokoOrderTaskCallback, MokoSupport.IUpgradeDataListener {
     public static final int EXCEPTION_FILEPATH_IS_NULL = 0x01;
     public static final int EXCEPTION_DEVICE_MAC_ADDRESS_IS_NULL = 0x02;
     public static final int EXCEPTION_UPGRADE_FAILURE = 0x03;
@@ -69,10 +70,13 @@ public class UpgradeHandler implements MokoConnStateCallback, MokoOrderTaskCallb
     ///////////////////////////////////////////////////////////////////////////
     // connect callback
     ///////////////////////////////////////////////////////////////////////////
+
+    private File file;
+
     @Override
     public void onConnectSuccess() {
         isConnSuccess = true;
-        final File file = new File(mFilePath);
+        file = new File(mFilePath);
         new Handler(context.getMainLooper()).postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -127,14 +131,20 @@ public class UpgradeHandler implements MokoConnStateCallback, MokoOrderTaskCallb
         MokoSupport.getInstance().sendOrder(task);
     }
 
+    private byte[] mUpgradeData;
+
     public void upgradeBand(byte[] packageIndex, byte[] fileBytes) {
         UpgradeBandTask task = new UpgradeBandTask(this, packageIndex, fileBytes);
-        MokoSupport.getInstance().sendUpgradeOrder(task);
+        mUpgradeData = task.assemble();
+        MokoSupport.getInstance().sendUpgradeOrder(task, this);
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // order callback
     ///////////////////////////////////////////////////////////////////////////
+
+    private int index;
+
     @Override
     public void onOrderResult(OrderTaskResponse response) {
         OrderEnum orderEnum = response.order;
@@ -143,53 +153,16 @@ public class UpgradeHandler implements MokoConnStateCallback, MokoOrderTaskCallb
                 CRCVerifyResponse crcResponse = (CRCVerifyResponse) response;
                 if (crcResponse.header == RESPONSE_HEADER_PACKAGE) {
                     if (DigitalConver.byteArr2Int(crcResponse.packageResult) == 0) {
-                        LogModule.i("upgrade start！");
-                        new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                int i = 0;
-                                try {
-                                    final File file = new File(mFilePath);
-                                    if (in == null) {
-                                        in = new FileInputStream(file);
-                                    }
-                                    while (in.available() > 0 && !isStop) {
-                                        byte[] indexByte = DigitalConver.int2ByteArr(i, 2);
-                                        byte b[] = new byte[17];
-                                        in.read(b);
-                                        upgradeBand(indexByte, b);
-                                        i++;
-                                        if (in == null) {
-                                            return;
-                                        }
-                                        int unread = in.available();
-                                        long length = file.length();
-                                        int read = (int) (length - unread);
-                                        final int percent = (int) (((float) read / (float) length) * 100);
-                                        new Handler(context.getMainLooper()).post(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                mCallback.onProgress(percent);
-                                            }
-                                        });
-                                        Thread.sleep(20);
-                                    }
-                                    in.close();
-                                    in = null;
-                                    new Handler(context.getMainLooper()).postDelayed(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            if (!isStop && !isUpgradeDone) {
-                                                LogModule.i("device error！");
-                                                onUpgradeFailure();
-                                            }
-                                        }
-                                    }, 5000);
-                                } catch (Exception e) {
-                                    onUpgradeFailure();
-                                }
+                        LogModule.i("开始升级！");
+                        try {
+                            index = 0;
+                            if (in == null) {
+                                in = new FileInputStream(file);
                             }
-                        }).start();
+                            sendData();
+                        } catch (Exception e) {
+                            onUpgradeFailure();
+                        }
                     }
                 } else if (crcResponse.header == RESPONSE_HEADER_PACKAGE_RESULT) {
                     switch (crcResponse.ack) {
@@ -229,6 +202,41 @@ public class UpgradeHandler implements MokoConnStateCallback, MokoOrderTaskCallb
         }
     }
 
+    private void sendData() throws IOException {
+        if (in.available() > 0 && !isStop) {
+            byte[] indexByte = DigitalConver.int2ByteArr(index, 2);
+            byte b[] = new byte[17];
+            in.read(b);
+            upgradeBand(indexByte, b);
+            index++;
+            if (in == null) {
+                return;
+            }
+            int unread = in.available();
+            long length = file.length();
+            int read = (int) (length - unread);
+            final int percent = (int) (((float) read / (float) length) * 100);
+            new Handler(context.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    mCallback.onProgress(percent);
+                }
+            });
+        } else {
+            in.close();
+            in = null;
+            new Handler(context.getMainLooper()).postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    if (!isStop && !isUpgradeDone) {
+                        LogModule.i("device error！");
+                        onUpgradeFailure();
+                    }
+                }
+            }, 5000);
+        }
+    }
+
     @Override
     public void onOrderTimeout(OrderTaskResponse response) {
 
@@ -240,7 +248,7 @@ public class UpgradeHandler implements MokoConnStateCallback, MokoOrderTaskCallb
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    // 
+    //
     ///////////////////////////////////////////////////////////////////////////
     public int CalcCrc16(String filePath) throws Exception {
         File file = new File(filePath);
@@ -269,6 +277,18 @@ public class UpgradeHandler implements MokoConnStateCallback, MokoOrderTaskCallb
 
     public boolean isConnDevice() {
         return MokoSupport.getInstance().isConnDevice(context, mDeviceMacAddress);
+    }
+
+    @Override
+    public void onDataSendSuccess(byte[] values) {
+        if (mUpgradeData != null && mUpgradeData.length > 0 && values != null && values.length > 0
+                && DigitalConver.bytesToHexString(mUpgradeData).equals(DigitalConver.bytesToHexString(values))) {
+            try {
+                sendData();
+            } catch (IOException e) {
+                onDeviceDisconnected();
+            }
+        }
     }
 
     public interface IUpgradeCallback {
