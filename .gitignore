@@ -27,4 +27,6 @@ proguard/
 *.log
 .idea
 *.iml
+*.DS_Store
+/*/release/
 
