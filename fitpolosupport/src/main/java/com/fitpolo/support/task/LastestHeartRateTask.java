@@ -138,7 +138,10 @@ public class LastestHeartRateTask extends OrderTask {
         MokoSupport.getInstance().getHandler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (!heartRatesMap.get(heartRateCount)) {
+                if (heartRatesMap != null
+                        && !heartRatesMap.isEmpty()
+                        && heartRatesMap.get(heartRateCount) != null
+                        && !heartRatesMap.get(heartRateCount)) {
                     orderStatus = OrderTask.ORDER_STATUS_SUCCESS;
                     LogModule.i("获取心率第" + heartRateCount + "个数据超时");
                     MokoSupport.getInstance().pollTask();

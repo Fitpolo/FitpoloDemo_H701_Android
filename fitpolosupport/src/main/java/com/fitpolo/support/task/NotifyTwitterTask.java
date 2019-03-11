@@ -1,5 +1,7 @@
 package com.fitpolo.support.task;
 
+import android.support.annotation.NonNull;
+
 import com.fitpolo.support.callback.MokoOrderTaskCallback;
 import com.fitpolo.support.entity.OrderEnum;
 import com.fitpolo.support.entity.OrderType;
@@ -17,14 +19,15 @@ public class NotifyTwitterTask extends OrderTask {
     private byte[] orderData;
 
 
-    public NotifyTwitterTask(MokoOrderTaskCallback callback, String showText) {
+    public NotifyTwitterTask(MokoOrderTaskCallback callback,@NonNull String showText) {
         super(OrderType.WRITE, OrderEnum.setTwitterNotify, callback, OrderTask.RESPONSE_TYPE_WRITE_NO_RESPONSE);
         orderData = new byte[ORDERDATA_LENGTH];
         orderData[0] = (byte) HEADER_TWITTER_SHAKE;
         orderData[1] = 0x00;
         orderData[2] = 0x00;
-        orderData[3] = showText.length() > 16 ? 0x10 : (byte) showText.length();
-        for (int i = 0; i < showText.length() && i < 16; i++) {
+        int length = showText == null ? 0 : showText.length() > 16 ? 0x10 : showText.length();
+        orderData[3] = (byte) length;
+        for (int i = 0; i < length && i < 16; i++) {
             int c = (int) showText.charAt(i);
             orderData[i + 4] = (byte) c;
         }
