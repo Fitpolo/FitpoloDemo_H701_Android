@@ -534,7 +534,7 @@ public class SendOrderActivity extends BaseActivity {
 
     private void back() {
         if (MokoSupport.getInstance().isConnDevice(this, deviceMacAddress)) {
-            MokoSupport.getInstance().disConnectBle();
+           mService.disConnectBle();
         }
         finish();
     }
