@@ -1,6 +1,6 @@
 package com.fitpolo.support.task;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.fitpolo.support.callback.MokoOrderTaskCallback;
 import com.fitpolo.support.entity.OrderEnum;

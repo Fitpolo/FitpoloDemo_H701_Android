@@ -9,7 +9,7 @@ import android.widget.TextView;
 import com.fitpolo.demo.R;
 import com.fitpolo.support.entity.BleDevice;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 
 /**
@@ -41,11 +41,11 @@ public class DeviceAdapter extends FitpoloBaseAdapter<BleDevice> {
     }
 
     class DeviceViewHolder extends ViewHolder {
-        @Bind(R.id.device_name)
+        @BindView(R.id.device_name)
         TextView deviceName;
-        @Bind(R.id.device_address)
+        @BindView(R.id.device_address)
         TextView deviceAddress;
-        @Bind(R.id.device_rssi)
+        @BindView(R.id.device_rssi)
         TextView deviceRssi;
 
         public DeviceViewHolder(View convertView) {

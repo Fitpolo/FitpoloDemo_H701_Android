@@ -4,7 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.location.LocationManager;
 import android.provider.Settings;
-import android.support.v4.app.NotificationManagerCompat;
+import androidx.core.app.NotificationManagerCompat;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;

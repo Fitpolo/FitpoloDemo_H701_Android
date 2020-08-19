@@ -68,7 +68,7 @@ import com.fitpolo.support.task.UserInfoTask;
 import java.util.ArrayList;
 import java.util.Calendar;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 
 /**
@@ -80,25 +80,25 @@ import butterknife.ButterKnife;
 public class SendOrderActivity extends BaseActivity {
     private static final String TAG = "SendOrderActivity";
 
-    @Bind(R.id.btn_heart_rate_interval)
+    @BindView(R.id.btn_heart_rate_interval)
     Button btnHeartRateInterval;
-    @Bind(R.id.btn_lastest_steps)
+    @BindView(R.id.btn_lastest_steps)
     Button btnLastestSteps;
-    @Bind(R.id.btn_lastest_sleeps)
+    @BindView(R.id.btn_lastest_sleeps)
     Button btnLastestSleeps;
-    @Bind(R.id.btn_lastest_heart_rate)
+    @BindView(R.id.btn_lastest_heart_rate)
     Button btnLastestHeartRate;
-    @Bind(R.id.btn_all_heart_rate)
+    @BindView(R.id.btn_all_heart_rate)
     Button btnAllHeartRate;
-    @Bind(R.id.btn_read_all_alarms)
+    @BindView(R.id.btn_read_all_alarms)
     Button btnReadAllAlarms;
-    @Bind(R.id.btn_read_sit_alert)
+    @BindView(R.id.btn_read_sit_alert)
     Button btnReadSitAlert;
-    @Bind(R.id.btn_read_settings)
+    @BindView(R.id.btn_read_settings)
     Button btnReadSettings;
-    @Bind(R.id.btn_notification)
+    @BindView(R.id.btn_notification)
     Button btnNotification;
-    @Bind(R.id.btn_firmware_params)
+    @BindView(R.id.btn_firmware_params)
     Button btnFirmwareParams;
     private MokoService mService;
     private String deviceMacAddress;

@@ -59,7 +59,7 @@ callback function`MokoScanDeviceCallback`：
 			...
 		}
 	For example：
-		BleDevice{address='DA:22:C3:C7:7D', name='FitpolpHR', rssi=-38, verifyCode='0C8D02', scanRecord=[2,1,6,7...]}
+		BleDevice{address='DA:22:C3:C7:7D', name='FitpolpHR', rssi=-38, verifyCode='0C8D02', scanRecord=\[2,1,6,7...\]}
 
 - Do the handle work after scan in`onStopScan()`.
 

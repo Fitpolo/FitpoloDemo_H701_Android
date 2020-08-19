@@ -26,7 +26,7 @@ import com.fitpolo.support.entity.BleDevice;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 
 
@@ -38,7 +38,7 @@ import butterknife.ButterKnife;
 
 public class MainActivity extends BaseActivity implements AdapterView.OnItemClickListener, MokoScanDeviceCallback {
     private static final String TAG = "MainActivity";
-    @Bind(R.id.lv_device)
+    @BindView(R.id.lv_device)
     ListView lvDevice;
 
     private ArrayList<BleDevice> mDatas;
